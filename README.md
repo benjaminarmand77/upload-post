@@ -1,4 +1,22 @@
-# Upload-Post (self-hosted clone)
+# Upload-Post (clone auto-hébergé)
+
+## Lancer le site chez toi (3 commandes)
+
+Il faut Node.js 24 (https://nodejs.org, version « Current »). Ensuite, dans un terminal :
+
+```bash
+git clone https://github.com/benjaminarmand77/upload-post.git
+cd upload-post && npm install
+npm run dev
+```
+
+Puis ouvre http://127.0.0.1:4321 dans ton navigateur. Pour te connecter, entre ton e-mail sur la page de login : comme aucun serveur mail n'est configuré, le lien de connexion s'affiche directement à l'écran, il suffit de cliquer dessus.
+
+Tout fonctionne en mode « sandbox » (publication simulée sur les 22 plateformes). Pour publier pour de vrai sur une plateforme, copie `.env.example` en `.env` et renseigne les clés de cette plateforme (voir « Sandbox vs live » plus bas). `ffmpeg` installé sur la machine active l'éditeur vidéo.
+
+Tu peux aussi demander à Claude Code d'ouvrir ce dossier : le README et `/docs` décrivent toute l'API et le serveur MCP (`POST /mcp`).
+
+---
 
 A full recreation of [upload-post.com](https://www.upload-post.com/fr/): marketing site (FR default + EN, 14-language routing), 22 platform pages, pricing, 11 free tools, guides, comparisons, legal pages, a dashboard app and a REST API compatible with the original `api.upload-post.com` paths and parameters, plus a remote MCP server.
 
