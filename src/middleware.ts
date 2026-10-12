@@ -25,6 +25,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (r) { context.locals.user = r.user; context.locals.session = r.session; }
     } catch { /* database not ready yet */ }
   }
+  // Open mode: the browser is signed in automatically as the owner account (no login wall, no quotas).
+  if (!context.locals.user && !/^\/(api|mcp|uploads|_astro|health)/.test(path) && context.request.method === 'GET') {
+    try {
+      const { OPEN_MODE, OWNER_EMAIL } = await import('./server/plans');
+      if (OPEN_MODE) {
+        const { findUserByEmail, createUser, createSession } = await import('./server/auth');
+        const owner = findUserByEmail(OWNER_EMAIL) ?? createUser(OWNER_EMAIL, { name: 'Owner', plan: 'business' });
+        const session = createSession(owner.id, context.request.headers.get('user-agent'), null);
+        context.cookies.set('up_session', session.id, { path: '/', httpOnly: true, sameSite: 'lax', secure: url.protocol === 'https:', expires: new Date(session.expires_at) });
+        context.locals.user = owner; context.locals.session = session;
+      }
+    } catch (e) { console.error('[open-mode]', e); }
+  }
 
   const isMcpRpc = path === '/mcp' && context.request.method !== 'GET';
   if (PASSTHROUGH.test(path) || isMcpRpc) {

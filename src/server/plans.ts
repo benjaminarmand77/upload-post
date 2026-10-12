@@ -2,8 +2,14 @@ import { PLAN_LIMITS, type PlanKey } from '../lib/pricing';
 import { get, run, monthKey, type UserRow } from './db';
 import { ApiError } from './api';
 
-export function planOf(user: UserRow): PlanKey { return (user.plan in PLAN_LIMITS ? user.plan : 'free') as PlanKey; }
-export function limitsOf(user: UserRow) { const l = PLAN_LIMITS[planOf(user)]; return { ...l, profiles: l.profiles + (user.extra_profiles || 0) }; }
+/** Open mode (default for self-hosting): no login wall, no quotas, every feature on. Set OPEN_MODE=0 to run the SaaS rules. */
+export const OPEN_MODE = process.env.OPEN_MODE !== '0';
+export const OWNER_EMAIL = (process.env.OWNER_EMAIL || 'owner@local').toLowerCase();
+export function planOf(user: UserRow): PlanKey { return OPEN_MODE ? 'business' : (user.plan in PLAN_LIMITS ? user.plan : 'free') as PlanKey; }
+export function limitsOf(user: UserRow) {
+  if (OPEN_MODE) return { ...PLAN_LIMITS.business, uploads: null, profiles: 999999, ffmpegMinutes: 999999, aiShorts: 999999, seats: 999, whitelabel: true, priority: true, tiktok: true };
+  const l = PLAN_LIMITS[planOf(user)]; return { ...l, profiles: l.profiles + (user.extra_profiles || 0) };
+}
 
 export interface UsageRow { user_id: string; month: string; uploads: number; ffmpeg_minutes: number; ai_shorts: number; x_link_posts: number; last_reset: string | null }
 export function usageOf(userId: string, month = monthKey()): UsageRow {
@@ -16,6 +22,7 @@ export function usageInfo(user: UserRow) {
   return { count: u.uploads, limit: l.uploads ?? 999999, last_reset: u.last_reset };
 }
 export function assertUploadQuota(user: UserRow, count = 1) {
+  if (OPEN_MODE) return;
   const l = limitsOf(user); if (l.uploads === null) return;
   const u = usageOf(user.id);
   if (u.uploads + count > l.uploads) throw new ApiError(429, `Monthly upload limit reached (${l.uploads} uploads on the ${planOf(user)} plan). Upgrade your plan to continue.`, 'upload_limit_reached', { usage: { count: u.uploads, limit: l.uploads, last_reset: u.last_reset } });
@@ -23,9 +30,11 @@ export function assertUploadQuota(user: UserRow, count = 1) {
 export function bumpUsage(userId: string, field: 'uploads' | 'ai_shorts' | 'x_link_posts', n = 1) { usageOf(userId); run(`UPDATE usage SET ${field} = ${field} + ? WHERE user_id = ? AND month = ?`, n, userId, monthKey()); }
 export function bumpFfmpeg(userId: string, minutes: number) { usageOf(userId); run('UPDATE usage SET ffmpeg_minutes = ffmpeg_minutes + ? WHERE user_id = ? AND month = ?', minutes, userId, monthKey()); }
 export function assertPlatformAllowed(user: UserRow, platform: string) {
+  if (OPEN_MODE) return;
   if (platform === 'tiktok' && !limitsOf(user).tiktok) throw new ApiError(403, 'TikTok publishing requires a paid plan (Basic or higher).', 'plan_upgrade_required');
 }
 export function assertProfileQuota(user: UserRow, currentCount: number) {
+  if (OPEN_MODE) return;
   const l = limitsOf(user);
   if (currentCount >= l.profiles) throw new ApiError(403, `Profile limit reached (${l.profiles} profiles on the ${planOf(user)} plan).`, 'profile_limit_reached', { limit: l.profiles, plan: planOf(user) });
 }

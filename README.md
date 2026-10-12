@@ -10,7 +10,7 @@ cd upload-post && npm install
 npm run dev
 ```
 
-Puis ouvre http://127.0.0.1:4321 dans ton navigateur. Pour te connecter, entre ton e-mail sur la page de login : comme aucun serveur mail n'est configuré, le lien de connexion s'affiche directement à l'écran, il suffit de cliquer dessus.
+Puis ouvre http://127.0.0.1:4321 dans ton navigateur. Pas de connexion ni de quota : le site est en « mode ouvert » par défaut, tu arrives directement connecté sur le tableau de bord (http://127.0.0.1:4321/app/) avec toutes les fonctionnalités débloquées. (Pour retrouver le comportement du vrai SaaS, login par e-mail et plans payants, mets `OPEN_MODE=0` dans un fichier `.env`.)
 
 Tout fonctionne en mode « sandbox » (publication simulée sur les 22 plateformes). Pour publier pour de vrai sur une plateforme, copie `.env.example` en `.env` et renseigne les clés de cette plateforme (voir « Sandbox vs live » plus bas). `ffmpeg` installé sur la machine active l'éditeur vidéo.
 
