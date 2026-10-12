@@ -29,7 +29,7 @@ const {
   ogImage = '/images/og-image.svg',
   jsonLd,
 } = Astro.props;
-const site = Astro.site ?? new URL('http://127.0.0.1:4321');
+const site = new URL((process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '') + '/'); // runtime, so one image serves any domain
 const [, bare] = splitLang(Astro.url.pathname);
 const canonicalPath = Astro.props.canonicalPath ?? localePath(lang, bare);
 const canonical = new URL(canonicalPath, site).toString();
