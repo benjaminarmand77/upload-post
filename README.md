@@ -45,3 +45,14 @@ When `SMTP_HOST` is empty, the magic link is displayed on the login page after y
 ## Data
 
 SQLite database and uploaded media live in `./data` (override with `DATA_DIR`).
+
+## Deploy on Render
+
+The repo ships a `Dockerfile` (Node 24 + ffmpeg) and a `render.yaml` blueprint (web service + 5 GB persistent disk mounted on `/data`).
+
+1. Push this folder to a GitHub repository.
+2. On https://dashboard.render.com → **New → Blueprint**, pick the repository: Render reads `render.yaml` and creates the service and the disk.
+3. In the service **Environment** tab set `SITE_URL` to the public URL (`https://<service>.onrender.com` or your own domain). `APP_SECRET` is generated automatically.
+4. Optional: `SMTP_*` for real sign-in emails (otherwise the magic link is shown on the login page), `ANTHROPIC_API_KEY`, platform OAuth keys (see `.env.example`).
+
+Health check: `GET /health`. Data (SQLite + uploads) lives on the disk, so it survives deploys.
