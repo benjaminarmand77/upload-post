@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { TOOLS, toolSlug } from '../../../lib/content/tools';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+const s = fr ? { title: 'Outils gratuits pour les réseaux sociaux', sub: 'De petits outils que nous avons créés pour notre propre travail de publication. Ils tournent dans votre navigateur, sans compte, et vos fichiers ne quittent jamais votre appareil.', use: 'Utiliser gratuitement', meta: 'Outils gratuits pour les réseaux sociaux (sans inscription)' } : { title: 'Free social media tools', sub: 'Small tools we built for our own publishing work. They run in your browser, no account needed, and your files never leave your device.', use: 'Use for free', meta: 'Free social media tools (no sign-up)' };
+---
+<BaseLayout title={s.meta} description={s.sub}>
+  <section class="bg-white dark:bg-slate-950 pt-12 pb-10 text-center"><div class="container-x"><h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white">{s.title}</h1><p class="mt-4 max-w-2xl mx-auto text-slate-500 dark:text-slate-400">{s.sub}</p></div></section>
+  <section class="lp-section-gray !pt-4"><div class="container-x grid sm:grid-cols-2 lg:grid-cols-3 gap-5">{TOOLS.map((t, i) => <a href={L(`/tools/${toolSlug(t, lang)}/`)} class="card card-hover p-6 reveal" style={`transition-delay:${(i % 3) * 60}ms`}><span class="icon-box"><i class={`${t.icon.startsWith('fa-brands') ? t.icon : 'fa-solid ' + t.icon}`}></i></span><h2 class="mt-4 font-semibold text-slate-900 dark:text-white">{t.title[txt]}</h2><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{t.desc[txt]}</p><span class="mt-4 inline-block text-sm font-semibold text-brand-600 dark:text-brand-400">{s.use} →</span></a>)}</div></section>
+</BaseLayout>

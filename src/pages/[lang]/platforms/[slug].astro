@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/marketing/PageHero.astro';
+import CodeBlock from '../../../components/marketing/CodeBlock.astro';
+import FeatureGrid from '../../../components/marketing/FeatureGrid.astro';
+import Steps from '../../../components/marketing/Steps.astro';
+import Cta from '../../../components/marketing/Cta.astro';
+import FaqList from '../../../components/marketing/FaqList.astro';
+import PlatformIcon from '../../../components/PlatformIcon.astro';
+import { platformBySlug, PLATFORMS } from '../../../lib/platforms';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const p = platformBySlug(Astro.params.slug!); if (!p) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const t = Astro.locals.t; const pp = t.platformsPage; const L = (x: string) => localePath(lang, x);
+const txt = lang === 'fr' ? 'fr' : 'en'; const fr = txt === 'fr';
+const n = (s: string) => s.replace(/\{name\}/g, p.name);
+const endpoint = p.supports.video ? 'upload' : p.supports.photos ? 'upload_photos' : 'upload_text';
+const mediaLine = p.supports.video ? `  -F "video=@video.mp4" \\\n` : p.supports.photos ? `  -F "photos[]=@photo.jpg" \\\n` : '';
+const code = `curl -X POST \\\n  -H "Authorization: Apikey ${fr ? 'VOTRE_CLÉ' : 'YOUR_KEY'}" \\\n  -F "user=default" \\\n${mediaLine}  -F "title=${fr ? 'Ma publication' : 'My post'} ${p.name}" \\\n  -F "platform[]=${p.key}" \\\n  https://api.upload-post.com/api/${endpoint}`;
+const caps = [p.supports.video && pp.video, p.supports.photos && pp.photos, p.supports.text && pp.text, p.supports.document && pp.document, p.supports.analytics && pp.analyticsCap, p.supports.comments && pp.comments].filter(Boolean) as string[];
+const faq = fr ? [
+  { q: `Dois-je créer une app développeur ${p.name} ?`, a: p.auth === 'oauth' ? `Non. Vous cliquez sur Connecter, vous acceptez dans la fenêtre ${p.name}, et le compte est actif. Nous gérons l'app, la revue et le rafraîchissement des tokens.` : `Non. ${p.name} se connecte en collant votre propre clé ou vos identifiants dans le tableau de bord : un seul champ, aucune app à créer.` },
+  { q: `Puis-je programmer mes publications ${p.name} ?`, a: `Oui. Ajoutez scheduled_date (ISO-8601) et timezone à votre requête, ou add_to_queue=true pour utiliser le prochain créneau de votre file de publication.` },
+  { q: `Combien de caractères pour une publication ${p.name} ?`, a: `${p.textLimit.toLocaleString('fr-FR')} caractères.${['x', 'threads', 'bluesky'].includes(p.key) ? ' Au-delà, Upload-Post crée automatiquement un thread.' : ''}` },
+  { q: `${p.name} est-il inclus dans l'offre gratuite ?`, a: p.inFreePlan ? `Oui, ${p.name} est disponible dès le plan Free (10 uploads par mois).` : `${p.name} est disponible à partir du plan Basic.` },
+] : [
+  { q: `Do I need to create a ${p.name} developer app?`, a: p.auth === 'oauth' ? `No. Click Connect, accept in the ${p.name} window, and the account is live. We handle the app, the review and token refreshes.` : `No. ${p.name} connects by pasting your own key or credentials in the dashboard: one field, no app to create.` },
+  { q: `Can I schedule my ${p.name} posts?`, a: `Yes. Add scheduled_date (ISO-8601) and timezone to your request, or add_to_queue=true to use the next slot of your publishing queue.` },
+  { q: `How many characters can a ${p.name} post have?`, a: `${p.textLimit.toLocaleString('en-US')} characters.${['x', 'threads', 'bluesky'].includes(p.key) ? ' Beyond that, Upload-Post automatically creates a thread.' : ''}` },
+  { q: `Is ${p.name} included in the free tier?`, a: p.inFreePlan ? `Yes, ${p.name} is available on the Free plan (10 uploads per month).` : `${p.name} is available from the Basic plan.` },
+];
+const related = PLATFORMS.filter((x) => x.key !== p.key).slice(0, 8);
+const title = `${p.page.title[txt]} | Upload-Post`;
+---
+<BaseLayout title={title} description={p.page.intro[txt]}>
+  <PageHero dark breadcrumb={[{ label: t.common.home, href: '/' }, { label: pp.title, href: '/platforms/' }, { label: p.name }]} title={p.page.title[txt]} titleB={p.page.subtitle[txt]} subtitle={p.page.intro[txt]} cta={{ label: t.common.startFree, href: `/app/login?source=${lang}-platforms-${p.slug}` }} cta2={{ label: t.common.apiDocs, href: '/docs/', icon: 'fa-book' }}>
+    <div slot="aside" class="space-y-4"><div class="flex items-center gap-3 text-white"><span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10"><PlatformIcon platform={p.key} size="text-3xl" /></span><div><div class="font-bold text-lg">{p.name}</div><div class="text-xs text-slate-400">{caps.join(' · ')}</div></div></div><CodeBlock code={code} /></div>
+  </PageHero>
+  <FeatureGrid title={n(pp.allFeatures)} subtitle={n(pp.completeApi)} items={p.page.features[txt]} colored />
+  <section class="lp-section-gray"><div class="container-x grid md:grid-cols-3 gap-5">
+    <div class="card p-6"><div class="text-xs font-semibold uppercase tracking-wider text-slate-400">{pp.capabilities}</div><ul class="mt-3 space-y-2">{caps.map((c) => <li class="check-li">{c}</li>)}</ul></div>
+    <div class="card p-6"><div class="text-xs font-semibold uppercase tracking-wider text-slate-400">{pp.connection}</div><p class="mt-3 text-sm text-slate-600 dark:text-slate-300"><i class={`fa-solid ${p.auth === 'oauth' ? 'fa-hand-pointer' : 'fa-key'} text-brand-500 mr-2`}></i>{p.auth === 'oauth' ? pp.oauth : pp.credentials}</p>{p.credentialFields && <ul class="mt-3 text-xs text-slate-500 space-y-1">{p.credentialFields.map((f) => <li><code class="font-mono">{f.key}</code> — {f.label[txt]}</li>)}</ul>}</div>
+    <div class="card p-6"><div class="text-xs font-semibold uppercase tracking-wider text-slate-400">{pp.textLimit}</div><div class="mt-3 text-3xl font-extrabold text-brand-600 dark:text-brand-400">{p.textLimit.toLocaleString(lang)}</div><div class="text-xs text-slate-500">{pp.chars}{p.maxPhotos && p.supports.photos ? ` · ${p.maxPhotos} ${pp.photos.toLowerCase()} max` : ''}</div><div class="mt-4 text-xs font-semibold uppercase tracking-wider text-slate-400">{pp.relatedGuides}</div><ul class="mt-2 text-sm space-y-1"><li><a href={L(`/n8n/${p.slug === 'x' ? 'x-twitter' : p.slug}-upload/`)} class="text-brand-600 dark:text-brand-400 hover:underline">{n(pp.n8nGuide)}</a></li><li><a href={L(`/mcp/${p.slug}/`)} class="text-brand-600 dark:text-brand-400 hover:underline">{n(pp.mcpGuide)}</a></li><li><a href={L(`/skills/claude-code/${p.slug}/`)} class="text-brand-600 dark:text-brand-400 hover:underline">{n(pp.skillGuide)}</a></li></ul></div>
+  </div></section>
+  <Steps title={pp.stepsTitle} subtitle={n(pp.stepsSubtitle)} steps={pp.steps.map((s, i) => ({ t: n(s.t), d: n(s.d), icon: ['fa-user-plus', 'fa-plug', 'fa-code'][i] }))} gray={false} />
+  <FaqList title={t.home.faq.title} items={faq} gray />
+  <section class="lp-section-white"><div class="container-x"><h2 class="text-center text-sm font-semibold uppercase tracking-wider text-slate-400 mb-5">{t.common.allPlatforms}</h2><div class="flex flex-wrap justify-center gap-2">{related.map((r) => <a href={L(`/platforms/${r.slug}/`)} class="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm hover:border-brand-400"><PlatformIcon platform={r.key} size="text-sm" />{r.name}</a>)}<a href={L('/platforms/')} class="inline-flex items-center gap-2 rounded-lg border border-brand-300 dark:border-brand-500/50 px-3 py-1.5 text-sm font-semibold text-brand-600 dark:text-brand-400">{t.nav.allPlatforms} →</a></div></div></section>
+  <Cta title={n(pp.ctaTitle)} subtitle={n(pp.ctaSubtitle)} label={pp.createFree} href={`/app/login?source=${lang}-platforms-${p.slug}`} />
+</BaseLayout>

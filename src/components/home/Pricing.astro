@@ -1,0 +1,90 @@
+---
+import { PRICES, EXTRA_PROFILES, X_LINKS_ADDON, BUSINESS_EXTRA_PROFILE, PLAN_LIMITS, PLAN_KEYS, fmtPrice, type PlanKey } from '../../lib/pricing';
+import { langInfo } from '../../lib/i18n';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const p = t.pricing;
+const locale = langInfo(lang).locale;
+const data = { prices: PRICES, extra: EXTRA_PROFILES, xlinks: X_LINKS_ADDON, bizExtra: BUSINESS_EXTRA_PROFILE, locale, i18n: { billedAnnually: p.billedAnnually, mo: p.mo, yr: p.yr, each: p.each, billedMonthly: p.billedMonthly, month: p.month } };
+const seatsLabel: Record<PlanKey, string> = { free: p.ownerOnly, basic: p.ownerOnly, professional: p.ownerPlus1, advanced: p.ownerPlus4, business: p.ownerPlus9 };
+const link = (plan: PlanKey) => `/app/login?source=${lang}-pricing&plan=${plan}`;
+const fmt = (n: number) => n.toLocaleString(locale);
+---
+<section id="pricing" class="lp-section-gray">
+  <div class="container-x" data-pricing data-config={JSON.stringify(data)}>
+    <div class="text-center reveal">
+      <h2 class="section-title">{p.title}</h2>
+      <p class="section-subtitle">{p.subtitle}</p>
+      <div class="mt-7 inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 text-sm font-medium" role="tablist">
+        <button type="button" class="rounded-lg px-4 py-2 text-slate-600 dark:text-slate-300" data-cycle="monthly" role="tab" aria-selected="false">{p.monthly}</button>
+        <button type="button" class="rounded-lg px-4 py-2 bg-brand-600 text-white shadow" data-cycle="yearly" role="tab" aria-selected="true">{p.annual} <span class="ml-1 rounded-md bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-amber-900"><i class="fa-solid fa-fire text-[9px]"></i> {p.save}</span></button>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-500 dark:text-slate-400"><span><i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i>{p.noCreditCard}</span><span><i class="fa-solid fa-shield-halved text-emerald-500 mr-1.5"></i>{p.moneyBack}</span></div>
+    </div>
+
+    <div class="mt-10 -mx-4 px-4 overflow-x-auto no-scrollbar">
+      <div class="grid grid-flow-col auto-cols-[minmax(250px,1fr)] lg:grid-flow-row lg:grid-cols-5 gap-4 min-w-max lg:min-w-0">
+        {PLAN_KEYS.map((k) => { const lim = PLAN_LIMITS[k]; const popular = k === 'professional'; return (
+          <article class={`relative card p-5 flex flex-col ${popular ? 'border-brand-500 dark:border-brand-400 shadow-glow' : ''}`} data-plan={k}>
+            {popular && <span class="absolute -top-3 left-1/2 -translate-x-1/2 badge-brand bg-brand-600 !text-white border-0 whitespace-nowrap">{p.mostPopular}</span>}
+            <span class="icon-box"><i class={`fa-solid ${popular ? 'fa-cloud-arrow-up' : 'fa-cloud'}`}></i></span>
+            <h3 class="mt-3 text-xl font-bold text-slate-900 dark:text-white">{p.plans[k].name}</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{p.plans[k].desc}</p>
+            <div class="mt-4">
+              <div class="flex items-baseline gap-1"><span class="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums" data-price>{k === 'free' ? fmtPrice(0, 'usd', locale) : fmtPrice(PRICES.usd.yearly[k].price, 'usd', locale)}</span><span class="text-sm text-slate-500">/{p.mo}</span></div>
+              <div class="text-[11px] text-slate-500 h-4" data-billed>{k !== 'free' ? `${fmtPrice(PRICES.usd.yearly[k].billed!, 'usd', locale)} ${p.billedAnnually}` : ''}</div>
+            </div>
+            <a href={link(k)} class={`${popular ? 'btn-primary' : 'btn-secondary'} mt-3 !py-2.5 text-[13px]`}>{popular ? p.startFreeTrial : p.tryFree}</a>
+            <ul class="mt-5 space-y-2 text-[12.5px] text-slate-600 dark:text-slate-300">
+              <li class="check-li">{lim.uploads ? p.uploadsPerMonth.replace('{n}', String(lim.uploads)) : p.unlimitedUploads} <i class="fa-solid fa-circle-info text-[10px] text-slate-400 ml-1" title={lim.uploads ? p.uploadsPerMonth.replace('{n}', String(lim.uploads)) : p.unlimitedUploads}></i></li>
+              <li class="check-li">{lim.tiktok ? p.paidPlatforms : p.freePlatforms}</li>
+              <li class="check-li">{p.schedulePosts}</li>
+              <li class="check-li">{p.analytics}</li>
+              {lim.whitelabel && <li class="check-li">{p.whitelabel}</li>}
+              {lim.priority && <li class="check-li">{p.prioritySupport}</li>}
+            </ul>
+            <div class="my-4 border-t border-slate-200 dark:border-slate-800"></div>
+            <ul class="space-y-2 text-[12.5px] text-slate-600 dark:text-slate-300">
+              <li class="flex items-start gap-2 relative group"><i class="fa-solid fa-users text-slate-400 mt-0.5 text-xs"></i><span><strong class="text-slate-900 dark:text-white">{lim.profiles} {p.profiles}</strong> <i class="fa-solid fa-circle-info text-[10px] text-slate-400 cursor-help"></i></span>
+                <div class="invisible group-hover:visible absolute left-0 top-full mt-2 w-64 p-3 rounded-lg bg-slate-900 text-white text-[11px] shadow-xl z-20 border border-slate-700"><strong class="block mb-1 text-xs">{p.whatAreProfiles}</strong><p>{p.profileDesc1}</p><p class="mt-1 text-slate-300">{p.profileDesc2.replace('{n}', String(lim.profiles))}<br/>- {lim.profiles} TikTok<br/>- {lim.profiles} Instagram<br/>- {lim.profiles} YouTube<br/>{p.profileSuffix}</p></div></li>
+              <li class="flex items-start gap-2"><i class="fa-solid fa-film text-slate-400 mt-0.5 text-xs"></i><span>{p.videoProcessing.replace('{n}', fmt(lim.ffmpegMinutes))}</span></li>
+              <li class="flex items-start gap-2 relative group"><i class="fa-solid fa-wand-magic-sparkles text-slate-400 mt-0.5 text-xs"></i><span>{p.aiShorts.replace('{n}', fmt(lim.aiShorts))} <i class="fa-solid fa-circle-info text-[10px] text-slate-400 cursor-help"></i></span>
+                <div class="invisible group-hover:visible absolute right-0 top-full mt-2 w-64 p-3 rounded-lg bg-slate-900 text-white text-[11px] shadow-xl z-20 border border-slate-700"><strong class="block mb-1 text-xs">{p.whatIsAiShorts}</strong><p>{p.aiShortsDesc1}</p><p class="mt-1 text-slate-300">{p.aiShortsDesc2}</p></div></li>
+              {k !== 'free' && <li class="flex items-start gap-2"><i class="fa-solid fa-user-group text-slate-400 mt-0.5 text-xs"></i><span>{lim.seats} {lim.seats > 1 ? p.seats : p.seat} <span class="text-slate-400">({seatsLabel[k]})</span></span></li>}
+            </ul>
+            {EXTRA_PROFILES.usd[k] && (
+              <div class="mt-4 text-[11px] text-slate-500 dark:text-slate-400">
+                <p class="mb-1.5">{p.addExtraProfiles}</p>
+                {EXTRA_PROFILES.usd[k]!.map((e, idx) => <div class="flex items-center justify-between"><span class="font-semibold text-slate-700 dark:text-slate-200">+{e.count} {p.profiles}</span><span data-extra={idx}>+{fmtPrice(e.yearly, 'usd', locale)}/{p.yr}</span></div>)}
+                <div class="mt-2.5"><div class="flex items-center justify-between"><span class="font-semibold text-slate-700 dark:text-slate-200">{p.xLinksAddon}</span><span data-xlinks>+{fmtPrice(X_LINKS_ADDON.usd, 'usd', locale)}/{p.mo}</span></div><div class="text-[10px] mt-0.5">({p.billedMonthly}) · {p.xLinksAddonNote}</div></div>
+              </div>)}
+            {k === 'business' && <div class="mt-4 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-slate-400"></i><span>{p.extraProfiles} <strong class="text-slate-700 dark:text-slate-200" data-biz-extra>+{fmtPrice(BUSINESS_EXTRA_PROFILE.usd, 'usd', locale)}/{p.mo}</strong> {p.each}</span></div>}
+          </article>); })}
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-pricing]');
+  if (root) {
+    const cfg = JSON.parse(root.dataset.config!);
+    const EUR = ['es','fr','de','it','pt','nl','sv','fi','da','no','pl','cs','sk','hu','ro','el','bg'];
+    const cur: 'usd' | 'eur' = EUR.includes((navigator.language || 'en').split('-')[0].toLowerCase()) ? 'eur' : 'usd';
+    let cycle: 'monthly' | 'yearly' = 'yearly';
+    const money = (n: number) => (cur === 'eur' ? '€' : '$') + Number(n).toLocaleString(cfg.locale, { minimumFractionDigits: n % 1 !== 0 ? 2 : 0, maximumFractionDigits: 2 });
+    const render = () => {
+      root.querySelectorAll<HTMLElement>('[data-plan]').forEach((card) => {
+        const k = card.dataset.plan!;
+        const price = card.querySelector('[data-price]')!; const billed = card.querySelector('[data-billed]')!;
+        if (k === 'free') { price.textContent = money(0); billed.textContent = ''; }
+        else { const pr = cfg.prices[cur][cycle][k]; price.textContent = money(pr.price); billed.textContent = cycle === 'yearly' ? `${money(pr.billed)} ${cfg.i18n.billedAnnually}` : ''; }
+        const ex = cfg.extra[cur][k];
+        if (ex) ex.forEach((e: any, i: number) => { const el = card.querySelector(`[data-extra="${i}"]`); if (el) el.textContent = cycle === 'yearly' ? `+${money(e.yearly)}/${cfg.i18n.yr}` : `+${money(e.monthly)}/${cfg.i18n.mo}`; });
+        const xl = card.querySelector('[data-xlinks]'); if (xl) xl.textContent = `+${money(cfg.xlinks[cur])}/${cfg.i18n.mo}`;
+        const bz = card.querySelector('[data-biz-extra]'); if (bz) bz.textContent = `+${money(cfg.bizExtra[cur])}/${cfg.i18n.mo}`;
+        card.querySelectorAll('a[href*="/app/login"]').forEach((a) => { const u = new URL((a as HTMLAnchorElement).href); u.searchParams.set('cycle', cycle); u.searchParams.set('currency', cur); (a as HTMLAnchorElement).href = u.toString(); });
+      });
+      root.querySelectorAll<HTMLButtonElement>('[data-cycle]').forEach((b) => { const on = b.dataset.cycle === cycle; b.setAttribute('aria-selected', String(on)); b.classList.toggle('bg-brand-600', on); b.classList.toggle('text-white', on); b.classList.toggle('shadow', on); b.classList.toggle('text-slate-600', !on); b.classList.toggle('dark:text-slate-300', !on); });
+    };
+    root.querySelectorAll<HTMLButtonElement>('[data-cycle]').forEach((b) => b.addEventListener('click', () => { cycle = b.dataset.cycle as any; render(); }));
+    render();
+  }
+</script>

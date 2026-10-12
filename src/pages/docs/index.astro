@@ -1,0 +1,25 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/marketing/CodeBlock.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import { PLATFORMS } from '../../lib/platforms';
+const base = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+---
+<DocsLayout title="Upload-Post API — The universal social media publishing API" active="/docs/">
+  <div class="prose-up max-w-none">
+    <h1 class="text-4xl font-extrabold text-slate-900 dark:text-white">Ship social media features in minutes, not months.</h1>
+    <p class="text-lg">A single API to orchestrate media uploads, transcoding and publishing across 22 social networks. Built for developers scaling their digital presence.</p>
+    <div class="flex flex-wrap gap-3 not-prose my-6"><a href="/docs/quickstart" class="btn-primary">Start building</a><a href="/docs/api/reference" class="btn-secondary">Read the API reference</a><a href="/llm.txt" class="btn-secondary"><i class="fa-solid fa-robot"></i>LLM context</a></div>
+    <div class="not-prose flex flex-wrap gap-2 my-6">{PLATFORMS.map((p) => <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs"><PlatformIcon platform={p.key} size="text-xs" />{p.name}</span>)}</div>
+    <CodeBlock title="publish.ts" code={`import { UploadPost } from 'upload-post';\n\nconst uploader = new UploadPost('your-api-key', { baseUrl: '${base}/api' });\nconst result = await uploader.upload('/path/to/video.mp4', {\n  title: 'My Awesome Video',\n  user: 'default',\n  platforms: ['tiktok', 'instagram', 'youtube']\n});\nconsole.log('Upload successful:', result);`} />
+    <div class="not-prose grid sm:grid-cols-3 gap-4 my-8">{[['10/mo', 'Free uploads'], ['22', 'Networks'], ['100%', 'Async processing']].map(([v, l]) => <div class="card p-5 text-center"><div class="text-3xl font-extrabold text-brand-600">{v}</div><div class="text-xs text-slate-500">{l}</div></div>)}</div>
+    <h2>Everything you need to build social features</h2>
+    <div class="not-prose grid md:grid-cols-2 gap-4">{[['1 API, 22 networks', 'A single unified interface to publish to TikTok, Instagram, YouTube, LinkedIn and more. Forget maintaining a dozen OAuth flows and SDKs.', 'fa-sitemap'], ['Auto-transcoding', 'Upload a single 4K video; the engine resizes, crops and optimizes the bitrate for each destination.', 'fa-film'], ['Detailed analytics', 'Metrics normalized from every platform into one JSON schema.', 'fa-chart-line'], ['Reliable infrastructure', 'Queues, retries and rate limits are handled for you.', 'fa-server'], ['Security', 'Tokens encrypted at rest and in transit, hashed API keys.', 'fa-shield-halved'], ['AI-ready', 'MCP server, Claude Code skill and llm.txt so agents write perfect calls.', 'fa-robot']].map(([t, d, i]) => <div class="card p-5"><span class="icon-box"><i class={`fa-solid ${i}`}></i></span><h3 class="mt-3 font-semibold text-slate-900 dark:text-white">{t}</h3><p class="mt-1 text-sm text-slate-500">{d}</p></div>)}</div>
+    <h2>How Upload-Post works</h2>
+    <ol><li><strong>Send a request</strong> — submit your media and metadata to one endpoint.</li><li><strong>We process</strong> — download, transcode and validate per platform, asynchronously.</li><li><strong>Universal publish</strong> — content is pushed to every selected network and the exact post URLs are returned.</li></ol>
+    <h2>Developer-first responses</h2>
+    <CodeBlock title="POST /api/upload" code={`{\n  "success": true,\n  "message": "Upload initiated successfully in background.",\n  "request_id": "req_1a2b3c4d5e",\n  "total_platforms": 3\n}`} />
+    <h2>SDKs</h2>
+    <div class="not-prose grid sm:grid-cols-3 gap-4">{[['Python', 'pip install upload-post', '/docs/sdk-examples#python'], ['Node.js', 'npm install upload-post', '/docs/sdk-examples#javascript'], ['REST', 'curl -X POST …/api/upload', '/docs/api/reference']].map(([t, c, h]) => <a href={h} class="card card-hover p-5"><div class="font-semibold text-slate-900 dark:text-white">{t}</div><code class="block mt-2 text-xs font-mono text-slate-500">$ {c}</code></a>)}</div>
+  </div>
+</DocsLayout>

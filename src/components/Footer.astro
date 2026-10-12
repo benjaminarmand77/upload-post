@@ -1,0 +1,53 @@
+---
+import Logo from './Logo.astro';
+import { localePath } from '../lib/i18n';
+const lang = Astro.locals.lang;
+const t = Astro.locals.t;
+const L = (p: string) => localePath(lang, p);
+const cols = [
+  { title: t.footer.quickLinks, links: t.footer.quick },
+  { title: t.footer.guides, links: t.footer.guideLinks },
+  { title: t.footer.compare, links: t.footer.compareLinks },
+];
+---
+<footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+  <div class="container-x py-14">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
+      <div class="col-span-2 md:col-span-3 lg:col-span-1">
+        <a href={L('/')} class="flex items-center gap-2 font-bold text-slate-900 dark:text-white"><Logo size={30} />Upload-Post.com</a>
+        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400 max-w-xs">{t.footer.tagline}</p>
+        <div class="mt-4 flex items-center gap-3 text-slate-400">
+          <a href="https://x.com/upload_post" class="hover:text-brand-500" aria-label="X" rel="noopener"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="https://www.linkedin.com/company/upload-post" class="hover:text-brand-500" aria-label="LinkedIn" rel="noopener"><i class="fa-brands fa-linkedin-in"></i></a>
+          <a href="https://github.com/upload-post" class="hover:text-brand-500" aria-label="GitHub" rel="noopener"><i class="fa-brands fa-github"></i></a>
+          <a href="https://www.youtube.com/@upload-post" class="hover:text-brand-500" aria-label="YouTube" rel="noopener"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+      {cols.map((c) => (
+        <div>
+          <h4 class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-4">{c.title}</h4>
+          <ul class="space-y-2.5">
+            {c.links.map((l, i) => <li><a href={L(l.href)} class={`text-[13px] text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition ${i === c.links.length - 1 && c.title === t.footer.guides ? 'font-semibold' : ''} ${i < 2 && c.title === t.footer.compare ? 'font-medium text-slate-800 dark:text-slate-200' : ''}`}>{l.label}</a></li>)}
+          </ul>
+        </div>
+      ))}
+      <div class="space-y-10">
+        <div>
+          <h4 class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-4">{t.footer.aiSkills}</h4>
+          <ul class="space-y-2.5">{t.footer.skillLinks.map((l) => <li><a href={L(l.href)} class="text-[13px] text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">{l.label}</a></li>)}</ul>
+        </div>
+        <div>
+          <h4 class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-4">{t.footer.legal}</h4>
+          <ul class="space-y-2.5">
+            {t.footer.legalLinks.map((l) => <li><a href={L(l.href)} class="text-[13px] text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">{l.label}</a></li>)}
+            <li><button type="button" data-cookie-prefs class="text-[13px] text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">{t.footer.cookiePrefs}</button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800 pt-6 text-xs text-slate-500">
+      <span>{t.footer.rights}</span>
+      <a href={L('/status/')} class="inline-flex items-center gap-2 hover:text-brand-500"><span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-soft"></span>{t.footer.status}</a>
+    </div>
+  </div>
+</footer>

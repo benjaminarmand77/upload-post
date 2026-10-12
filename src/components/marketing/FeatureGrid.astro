@@ -1,0 +1,14 @@
+---
+interface Props { items: { t: string; d: string; icon?: string }[]; cols?: 2 | 3 | 4; title?: string; subtitle?: string; colored?: boolean }
+const { items, cols = 3, title, subtitle, colored = false } = Astro.props;
+const colorSet = ['bg-pink-500/10 text-pink-500', 'bg-sky-500/10 text-sky-500', 'bg-amber-500/10 text-amber-500', 'bg-emerald-500/10 text-emerald-500', 'bg-violet-500/10 text-violet-500', 'bg-rose-500/10 text-rose-500'];
+const defaultIcons = ['fa-cloud-arrow-up', 'fa-image', 'fa-images', 'fa-robot', 'fa-music', 'fa-chart-line', 'fa-bolt', 'fa-shield-halved', 'fa-clock'];
+---
+<section class="lp-section-white">
+  <div class="container-x">
+    {title && <div class="text-center reveal mb-10"><h2 class="section-title">{title}</h2>{subtitle && <p class="section-subtitle">{subtitle}</p>}</div>}
+    <div class={`grid sm:grid-cols-2 ${cols === 4 ? 'lg:grid-cols-4' : cols === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-5`}>
+      {items.map((it, i) => <div class="card card-hover p-6 reveal" style={`transition-delay:${(i % 3) * 60}ms`}><span class={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${colored ? colorSet[i % colorSet.length] : 'bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-300'}`}><i class={`fa-solid ${it.icon || defaultIcons[i % defaultIcons.length]}`}></i></span><h3 class="mt-4 font-semibold text-slate-900 dark:text-white">{it.t}</h3><p class="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{it.d}</p></div>)}
+    </div>
+  </div>
+</section>

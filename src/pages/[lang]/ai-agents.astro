@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/marketing/PageHero.astro';
+import CodeBlock from '../../components/marketing/CodeBlock.astro';
+import Cta from '../../components/marketing/Cta.astro';
+import { AGENTS, mcpConfig } from '../../lib/content/mcp';
+import { isLang, localePath } from '../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const L = (p: string) => localePath(lang, p);
+const base = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+const s = fr ? { title: 'Agents IA pour les réseaux sociaux', titleB: 'Un outil, tous les assistants', sub: 'Donnez à ChatGPT, Claude, Gemini, Cursor ou n\'importe quel agent IA la capacité de publier, programmer et analyser vos réseaux sociaux. Via MCP, le skill Claude Code ou l\'API REST documentée pour les LLM (llm.txt).', ways: 'Trois façons de connecter un agent', w: [['Serveur MCP', 'Le standard ouvert. 50 outils, un bloc de configuration.', '/mcp/'], ['Skill Claude Code', 'Un dossier de compétences que Claude Code lit avant d\'agir.', '/skills/claude-code/'], ['API + llm.txt', 'Donnez notre documentation à votre agent et laissez-le écrire les appels.', '/docs/']], agents: 'Guides par assistant' }
+: { title: 'AI agents for social media', titleB: 'One tool, every assistant', sub: 'Give ChatGPT, Claude, Gemini, Cursor or any AI agent the ability to publish, schedule and analyze your social media. Through MCP, the Claude Code skill or the REST API documented for LLMs (llm.txt).', ways: 'Three ways to connect an agent', w: [['MCP server', 'The open standard. 50 tools, one configuration block.', '/mcp/'], ['Claude Code skill', 'A skills folder Claude Code reads before acting.', '/skills/claude-code/'], ['API + llm.txt', 'Hand our documentation to your agent and let it write the calls.', '/docs/']], agents: 'Guides per assistant' };
+---
+<BaseLayout title={`${s.title} | Upload-Post`} description={s.sub}>
+  <PageHero eyebrow="AI" title={s.title} titleB={s.titleB} subtitle={s.sub} cta={{ label: Astro.locals.t.common.startFree, href: `/app/login?source=${lang}-ai-agents` }}><CodeBlock slot="aside" title="mcp.json" code={mcpConfig(base)} /></PageHero>
+  <section class="lp-section-gray"><div class="container-x"><h2 class="section-title text-center reveal">{s.ways}</h2><div class="mt-8 grid md:grid-cols-3 gap-5">{s.w.map(([t, d, h], i) => <a href={L(h)} class="card card-hover p-6 reveal"><span class="icon-box"><i class={`fa-solid ${['fa-robot', 'fa-terminal', 'fa-book'][i]}`}></i></span><h3 class="mt-4 font-semibold text-slate-900 dark:text-white">{t}</h3><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{d}</p></a>)}</div></div></section>
+  <section class="lp-section-white"><div class="container-x"><h2 class="section-title text-center reveal">{s.agents}</h2><div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{AGENTS.map((a) => <a href={L(`/${a.slug}-social-media/`)} class="card card-hover p-5 flex items-center gap-3"><span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800" style={`color:${a.color}`}><i class={a.icon}></i></span><div><div class="font-semibold text-slate-900 dark:text-white">{a.name}</div><div class="text-[11px] text-slate-500">MCP · API</div></div></a>)}</div></div></section>
+  <Cta title={s.titleB} subtitle={s.sub} label={Astro.locals.t.common.startFree} href={`/app/login?source=${lang}-ai-agents`} />
+</BaseLayout>

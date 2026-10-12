@@ -1,0 +1,61 @@
+---
+import PlatformIcon from '../PlatformIcon.astro';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.share;
+const signup = `/app/login?source=${lang}-share`;
+const targets = ['tiktok', 'instagram', 'youtube', 'x', 'linkedin', 'pinterest'] as const;
+const names: Record<string, string> = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', x: 'X', linkedin: 'LinkedIn', pinterest: 'Pinterest' };
+const verbs: Record<string, string> = { tiktok: 'posted', instagram: 'posted', youtube: 'uploaded', x: 'tweeted', linkedin: 'shared', pinterest: 'pinned' };
+---
+<section class="lp-section-gray">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 card relative overflow-hidden p-6 md:p-10 reveal" id="share-demo">
+      <div class="absolute inset-0 bg-grid opacity-50"></div>
+      <div class="relative grid md:grid-cols-[1fr_auto_1.3fr] gap-8 items-center">
+        <div class="mx-auto">
+          <div class="relative w-52">
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 badge-brand bg-brand-600 !text-white border-0 shadow">{s.oneUpload}</span>
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-900 p-3 shadow-elevated">
+              <div class="aspect-video rounded-lg bg-gradient-to-br from-brand-500 to-violet-600 flex items-center justify-center text-white"><i class="fa-solid fa-play text-xl"></i></div>
+              <div class="mt-2 flex items-center gap-2 text-[11px] font-mono text-slate-400"><span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse-soft"></span><span data-share-status>{s.distributing}</span></div>
+            </div>
+          </div>
+        </div>
+        <svg class="hidden md:block w-24 h-72" viewBox="0 0 96 288" fill="none" aria-hidden="true">
+          {targets.map((_, i) => <path d={`M0,144 C48,144 48,${24 + i * 48} 96,${24 + i * 48}`} stroke="rgb(99 102 241 / .5)" stroke-width="1.5" stroke-dasharray="6 6" class="animate-dash" />)}
+        </svg>
+        <ul class="space-y-2.5">
+          {targets.map((k) => (
+            <li class="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 px-4 py-2.5 transition" data-share-item={k} data-verb={verbs[k]}>
+              <div class="flex items-center gap-3"><span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800"><PlatformIcon platform={k} size="text-sm" /></span><div><div class="text-sm font-semibold text-slate-900 dark:text-white">{names[k]}</div><div class="text-[11px] font-mono text-slate-400" data-share-state>{s.queued}</div></div></div>
+              <i class="fa-solid fa-check text-emerald-500 opacity-0 transition" data-share-check></i>
+            </li>))}
+        </ul>
+      </div>
+    </div>
+    <div class="mt-6 grid md:grid-cols-3 gap-5">
+      {s.cards.map((c, i) => <div class="card p-6 reveal" style={`transition-delay:${i * 70}ms`}><div class="flex items-center gap-3"><span class="icon-box !h-9 !w-9 text-sm"><i class={`fa-solid ${c.icon}`}></i></span><h3 class="font-semibold text-slate-900 dark:text-white">{c.t}</h3></div><p class="mt-3 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{c.d}</p></div>)}
+    </div>
+    <div class="mt-12 text-center"><p class="text-lg font-semibold text-slate-900 dark:text-white">{s.join}</p><a href={signup} class="btn-primary mt-4">{s.cta}</a></div>
+  </div>
+</section>
+<script>
+  const root = document.getElementById('share-demo');
+  if (root) {
+    const items = [...root.querySelectorAll<HTMLElement>('[data-share-item]')];
+    const status = root.querySelector<HTMLElement>('[data-share-status]')!;
+    const queuedText = items[0]?.querySelector('[data-share-state]')?.textContent || 'queued';
+    let started = false;
+    const cycle = () => {
+      items.forEach((it) => { it.querySelector('[data-share-state]')!.textContent = queuedText; it.querySelector<HTMLElement>('[data-share-check]')!.style.opacity = '0'; it.classList.remove('border-emerald-400/60'); });
+      status.textContent = 'distributing…';
+      items.forEach((it, i) => setTimeout(() => {
+        it.classList.add('border-emerald-400/60');
+        it.querySelector('[data-share-state]')!.textContent = `${it.dataset.verb} · ${(0.4 + i * 0.3).toFixed(1)}s`;
+        it.querySelector<HTMLElement>('[data-share-check]')!.style.opacity = '1';
+        if (i === items.length - 1) { status.textContent = 'done ✓'; setTimeout(cycle, 2500); }
+      }, 700 + i * 650));
+    };
+    new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting) && !started) { started = true; cycle(); } }, { threshold: 0.3 }).observe(root);
+  }
+</script>

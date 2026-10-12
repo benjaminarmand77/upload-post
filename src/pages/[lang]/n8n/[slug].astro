@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/marketing/PageHero.astro';
+import CodeBlock from '../../../components/marketing/CodeBlock.astro';
+import Cta from '../../../components/marketing/Cta.astro';
+import FaqList from '../../../components/marketing/FaqList.astro';
+import PlatformIcon from '../../../components/PlatformIcon.astro';
+import { N8N_TEMPLATES, platformFromUploadGuide } from '../../../lib/content/templates';
+import { PLATFORM_MAP, type PlatformKey } from '../../../lib/platforms';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+const slug = Astro.params.slug!; const isMake = Astro.url.searchParams.get('tool') === 'make';
+const pk = platformFromUploadGuide(slug) as PlatformKey | undefined; const tpl = N8N_TEMPLATES.find((t) => t.slug === slug);
+if (!pk && !tpl) return new Response(null, { status: 404 });
+const p = pk ? PLATFORM_MAP[pk] : null;
+const title = p ? (fr ? `Publier sur ${p.name} avec n8n` : `Upload to ${p.name} with n8n`) : tpl!.title[txt];
+const sub = p ? (fr ? `Le nœud Upload-Post officiel publie ${p.supports.video ? 'vidéos, ' : ''}${p.supports.photos ? 'photos, ' : ''}textes sur ${p.name} depuis n'importe quel workflow n8n. ${p.page.intro[txt]}` : `The official Upload-Post node publishes ${p.supports.video ? 'videos, ' : ''}${p.supports.photos ? 'photos, ' : ''}text to ${p.name} from any n8n workflow. ${p.page.intro[txt]}`) : tpl!.desc[txt];
+const platforms = p ? [p.key] : tpl!.platforms;
+const op = p && p.supports.video ? 'uploadVideo' : p && p.supports.photos ? 'uploadPhotos' : 'uploadText';
+const workflow = { name: title, nodes: [{ parameters: { rule: { interval: [{ field: 'hours', hoursInterval: 24 }] } }, name: 'Schedule Trigger', type: 'n8n-nodes-base.scheduleTrigger', position: [0, 0] }, ...(tpl?.apps.includes('Google Drive') || !tpl ? [{ parameters: { operation: 'download', fileId: '={{ $json.id }}' }, name: 'Google Drive', type: 'n8n-nodes-base.googleDrive', position: [240, 0] }] : []), { parameters: { operation: op, user: 'default', title: '={{ $json.name || $json.title }}', platforms, binaryProperty: 'data', addToQueue: true }, name: 'Upload-Post', type: 'n8n-nodes-upload-post.uploadPost', credentials: { uploadPostApi: { name: 'Upload-Post account' } }, position: [480, 0] }, { parameters: { text: '=Published: {{ Object.values($json.results).map(r => r.url).join("\\n") }}' }, name: 'Slack', type: 'n8n-nodes-base.slack', position: [720, 0] }], connections: {} };
+const steps = fr ? [['Installez le nœud Upload-Post', 'Settings → Community Nodes → n8n-nodes-upload-post, puis ajoutez votre clé API dans Credentials.'], [p ? `Connectez ${p.name}` : 'Connectez vos réseaux', 'Dans votre tableau de bord Upload-Post, Profils & comptes → Connecter.'], ['Importez le workflow', 'Copiez le JSON ci-dessous dans n8n (Ctrl+V sur le canvas) et choisissez vos identifiants.'], ['Activez', 'Le déclencheur lance le flux ; chaque exécution renvoie les URLs des posts.']] : [['Install the Upload-Post node', 'Settings → Community Nodes → n8n-nodes-upload-post, then add your API key in Credentials.'], [p ? `Connect ${p.name}` : 'Connect your networks', 'In your Upload-Post dashboard, Profiles & accounts → Connect.'], ['Import the workflow', 'Paste the JSON below into n8n (Ctrl+V on the canvas) and pick your credentials.'], ['Activate', 'The trigger starts the flow; each run returns the post URLs.']];
+const faq = fr ? [{ q: 'Puis-je utiliser Make à la place de n8n ?', a: 'Oui : le même flux se construit avec le module HTTP de Make vers /api/upload. Voir le guide Make.' }, { q: 'Le nœud accepte-t-il les fichiers binaires ?', a: 'Oui, via la propriété binaire de n8n, ou une URL publique.' }] : [{ q: 'Can I use Make instead of n8n?', a: 'Yes: the same flow is built with Make\'s HTTP module to /api/upload. See the Make guide.' }, { q: 'Does the node accept binary files?', a: 'Yes, through n8n\'s binary property, or a public URL.' }];
+---
+<BaseLayout title={`${title} | Upload-Post`} description={sub}>
+  <PageHero breadcrumb={[{ label: 'n8n', href: '/n8n-templates/' }, { label: title }]} eyebrow={isMake ? 'Make' : 'n8n · ' + (fr ? 'Nœud officiel' : 'Official node')} title={title} subtitle={sub} cta={{ label: Astro.locals.t.common.startFree, href: `/app/login?source=${lang}-n8n-${slug}` }} cta2={{ label: fr ? 'Guide n8n' : 'n8n guide', href: '/n8n-integration-guide/', icon: 'fa-book' }}>
+    <div slot="aside" class="space-y-3"><div class="flex items-center gap-2">{platforms.map((k) => <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800"><PlatformIcon platform={k as PlatformKey} size="text-lg" /></span>)}<span class="ml-2 text-[#ea4b71] font-black">n8n</span></div><CodeBlock title="workflow.json" code={JSON.stringify(workflow, null, 2)} /></div>
+  </PageHero>
+  <section class="lp-section-gray"><div class="container-x max-w-4xl"><ol class="space-y-4">{steps.map(([n, t], i) => <li class="card p-6 flex gap-4 reveal"><span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white font-bold">{i + 1}</span><div><h2 class="font-semibold text-slate-900 dark:text-white text-lg">{n}</h2><p class="mt-1 text-slate-500 dark:text-slate-400">{t}</p></div></li>)}</ol>{tpl && <div class="mt-6 flex flex-wrap gap-1.5">{tpl.apps.map((a) => <span class="chip">{a}</span>)}</div>}</div></section>
+  <FaqList title="FAQ" items={faq} />
+  {p && <section class="lp-section-gray"><div class="container-x flex flex-wrap gap-2 justify-center"><a href={L(`/platforms/${p.slug}/`)} class="btn-secondary btn-sm">{Astro.locals.t.platformsPage.apiFor.replace('{name}', p.name)}</a><a href={L(`/mcp/${p.slug}/`)} class="btn-secondary btn-sm">MCP {p.name}</a><a href={L('/n8n-templates/')} class="btn-secondary btn-sm">{fr ? 'Tous les modèles' : 'All templates'}</a></div></section>}
+  <Cta title={title} label={Astro.locals.t.common.startFree} href={`/app/login?source=${lang}-n8n-${slug}`} />
+</BaseLayout>

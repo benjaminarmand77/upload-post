@@ -1,0 +1,17 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/marketing/CodeBlock.astro';
+const base = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+---
+<DocsLayout title="Quickstart" active="/docs/quickstart">
+  <div class="prose-up max-w-none"><h1 class="text-3xl font-extrabold text-slate-900 dark:text-white">Quickstart guide</h1><p>Get started with the Upload-Post API in minutes.</p>
+    <h2>Step 1 — Create your account</h2><p>Open <a href="/app/login">the app</a>, enter your email and click the sign-in link. No password, no credit card.</p>
+    <h2>Step 2 — Connect your social media accounts</h2><p>Go to <a href="/app/manage-users">Profiles &amp; accounts</a>. A profile is one person or client; its name is the <code>user</code> you pass to the API. Click <strong>Connect</strong> next to a platform and approve the permissions. Platforms without OAuth (Discord, Telegram, WordPress…) ask for a key instead. Platforms without an app configured on this server run in <em>sandbox</em> mode: publishing is simulated end to end.</p>
+    <h2>Step 3 — Generate your API key</h2><p>Open <a href="/app/api-keys">API keys</a> → Generate. Keys are shown once; only a hash is stored.</p>
+    <h2>Step 4 — Make your first call</h2>
+    <h3>Upload a video</h3><CodeBlock code={`curl \\\n -H 'Authorization: Apikey your-api-key-here' \\\n -F 'video=@/path/to/your/video.mp4' \\\n -F 'title="My First TikTok Video"' \\\n -F 'user="default"' \\\n -F 'platform[]=tiktok' \\\n -X POST ${base}/api/upload`} />
+    <h3>Upload a photo to Instagram</h3><CodeBlock code={`curl \\\n -H 'Authorization: Apikey your-api-key-here' \\\n -F 'photos[]=@/path/to/your/image1.jpg' \\\n -F 'user="default"' \\\n -F 'platform[]=instagram' \\\n -F 'title="My First Instagram Post"' \\\n -X POST ${base}/api/upload_photos`} />
+    <h3>Post text to X and LinkedIn, scheduled</h3><CodeBlock code={`curl \\\n -H 'Authorization: Apikey your-api-key-here' \\\n -F 'user=default' -F 'platform[]=x' -F 'platform[]=linkedin' \\\n -F 'title=Hello from the API' \\\n -F 'scheduled_date=2026-12-24T09:00:00' -F 'timezone=Europe/Paris' \\\n -X POST ${base}/api/upload_text`} />
+    <h2>Next steps</h2><ul><li><a href="/docs/api/reference">API reference</a> — every endpoint and parameter.</li><li><a href="/docs/sdk-examples">SDK examples</a> — Python and JavaScript.</li><li><a href="/docs/guides/webhooks">Webhooks</a> — be notified when a post is live.</li><li><a href="/docs/guides/mcp">MCP server</a> — let Claude or ChatGPT publish for you.</li></ul>
+  </div>
+</DocsLayout>

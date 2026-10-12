@@ -1,0 +1,3 @@
+import { route, requireUser, json, err } from '../../../../../../server/api';
+import { getFfmpegJob } from '../../../../../../server/ffmpeg';
+export const GET = route(async (ctx) => { const { user } = requireUser(ctx); const j = getFfmpegJob(user.id, ctx.params.job_id!); if (!j) return err(404, 'Job not found', 'not_found'); return json({ job_id: j.job_id, status: j.status, duration_seconds: j.duration_seconds, output_extension: j.output_extension, created_at: j.created_at, finished_at: j.finished_at, error: j.error, download_url: j.status === 'FINISHED' ? `/api/uploadposts/ffmpeg/jobs/${j.job_id}/download` : null }); });

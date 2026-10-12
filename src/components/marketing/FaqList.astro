@@ -1,0 +1,12 @@
+---
+interface Props { title?: string; items: { q: string; a: string }[]; gray?: boolean }
+const { title, items, gray = false } = Astro.props;
+const jsonLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: items.map((i) => ({ '@type': 'Question', name: i.q, acceptedAnswer: { '@type': 'Answer', text: i.a } })) };
+---
+<section class={gray ? 'lp-section-gray' : 'lp-section-white'}>
+  <div class="container-x max-w-3xl">
+    {title && <h2 class="section-title text-center mb-8 reveal">{title}</h2>}
+    <div class="card divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden reveal">{items.map((f, i) => <details class="group" open={i === 0}><summary class="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50"><span class="flex-1 font-semibold text-slate-900 dark:text-white text-[15px]">{f.q}</span><i class="fa-solid fa-plus text-xs text-slate-400 transition group-open:rotate-45"></i></summary><p class="px-6 pb-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{f.a}</p></details>)}</div>
+  </div>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</section>

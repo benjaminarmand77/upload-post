@@ -1,0 +1,48 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getAppDict } from '../../i18n/app';
+import { PRICES, PLAN_KEYS, PLAN_LIMITS, EXTRA_PROFILES, X_LINKS_ADDON, fmtPrice, currencyForLang, type PlanKey } from '../../lib/pricing';
+import { limitsOf, usageOf } from '../../server/plans';
+import { changePlan, setAddons } from '../../server/billing';
+import { getUser } from '../../server/auth';
+import { listProfiles } from '../../server/uploads';
+import { fmtDate, langInfo } from '../../lib/i18n';
+const user0 = Astro.locals.user; if (!user0) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const b = a.billing; const t = Astro.locals.t.pricing; const locale = langInfo(lang).locale;
+let user = user0.owner_user_id ? getUser(user0.owner_user_id)! : user0;
+let msg: string | null = null;
+const cur = (user.currency as 'usd' | 'eur') || currencyForLang(lang);
+if (Astro.request.method === 'POST' && user.id === user0.id) {
+  const fd = await Astro.request.formData();
+  try { if (fd.get('action') === 'plan') changePlan(user, String(fd.get('plan')), (fd.get('cycle') as any) || 'yearly', (fd.get('currency') as any) || cur); if (fd.get('action') === 'addons') setAddons(user, { extra_profiles: Number(fd.get('extra_profiles') || 0), x_links_addon: fd.get('x_links_addon') === 'on' }); user = getUser(user.id)!; msg = a.common.saved; } catch (e: any) { msg = e.message; }
+}
+const limits = limitsOf(user); const usage = usageOf(user.id); const profilesUsed = listProfiles(user.id).length;
+const cycle = (user.billing_cycle as 'monthly' | 'yearly') || 'yearly';
+const usageRows: [string, number, number | null | undefined][] = [[b.uploads, usage.uploads, limits.uploads], [b.profilesUsed, profilesUsed, limits.profiles], [b.ffmpegMin, Math.round(usage.ffmpeg_minutes * 10) / 10, limits.ffmpegMinutes], [b.aiShorts, usage.ai_shorts, limits.aiShorts]];
+const price = (k: PlanKey) => k === 'free' ? fmtPrice(0, cur, locale) : fmtPrice(PRICES[cur][cycle][k].price, cur, locale);
+---
+<AppLayout title={b.title} subtitle={b.subtitle} active="billing" wide>
+  {msg && <div class="mb-5 rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm">{msg}</div>}
+  <div class="grid lg:grid-cols-[1fr_1fr] gap-6">
+    <div class="card p-6"><div class="text-xs text-slate-500">{b.current}</div><div class="mt-1 flex items-baseline gap-3"><span class="text-3xl font-bold capitalize text-brand-600">{user.plan}</span><span class="text-slate-500">{price(user.plan as PlanKey)}{a.common.perMonth}</span><span class="chip">{cycle === 'yearly' ? b.yearly : b.monthly}</span></div>{user.plan_renews_at && <div class="mt-1 text-xs text-slate-500">{b.renews}: {fmtDate(user.plan_renews_at, lang)}</div>}
+      <div class="mt-5 space-y-3">{usageRows.map(([l, u, m]) => (<div><div class="flex justify-between text-xs"><span>{l}</span><span>{u} / {m ?? '∞'}</span></div><div class="mt-1 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"><div class="h-full bg-brand-500" style={`width:${m ? Math.min(100, Math.round((Number(u) / Number(m)) * 100)) : 5}%`}></div></div></div>))}</div>
+    </div>
+    <form method="post" class="card p-6 space-y-4"><input type="hidden" name="action" value="addons" /><h3 class="font-semibold text-slate-900 dark:text-white">{b.addons}</h3>
+      <label class="flex items-start gap-3 text-sm"><input type="checkbox" name="x_links_addon" class="mt-1 rounded" checked={!!user.x_links_addon} disabled={user.plan === 'free'} /><span><span class="font-medium text-slate-900 dark:text-white">{b.xLinks}</span> <span class="text-slate-500">+{fmtPrice(X_LINKS_ADDON[cur], cur, locale)}{a.common.perMonth}</span><p class="help">{b.xLinksHelp}</p></span></label>
+      <div><label class="label">{b.extraProfiles}</label><select name="extra_profiles" class="input input-select" disabled={user.plan === 'free' || user.plan === 'business'}><option value="0">—</option>{(EXTRA_PROFILES[cur][user.plan as PlanKey] || []).map((e) => <option value={e.count} selected={user.extra_profiles === e.count}>{`+${e.count} · +${fmtPrice(cycle === 'yearly' ? e.yearly : e.monthly, cur, locale)}/${cycle === 'yearly' ? t.yr : t.mo}`}</option>)}</select>{user.plan === 'business' && <p class="help">{t.extraProfiles} {`+${fmtPrice(cur === 'eur' ? 0.75 : 1, cur, locale)}/${t.mo} ${t.each}`}</p>}</div>
+      <button class="btn-primary btn-sm" disabled={user.plan === 'free'}>{a.common.save}</button>
+    </form>
+  </div>
+  <h2 class="mt-8 mb-3 font-semibold text-slate-900 dark:text-white">{b.changePlan}</h2>
+  <form method="post" class="mb-3 inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 text-sm"><input type="hidden" name="action" value="plan" /><input type="hidden" name="plan" value={user.plan} />{(['monthly', 'yearly'] as const).map((c) => <button name="cycle" value={c} class={`rounded-lg px-4 py-1.5 ${cycle === c ? 'bg-brand-600 text-white' : ''}`}>{c === 'monthly' ? b.monthly : b.yearly}{c === 'yearly' ? ' -40%' : ''}</button>)}</form>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+    {PLAN_KEYS.map((k) => { const l = PLAN_LIMITS[k]; const current = user.plan === k; return (
+      <form method="post" class={`card p-4 flex flex-col ${current ? 'border-brand-500' : ''}`}><input type="hidden" name="action" value="plan" /><input type="hidden" name="plan" value={k} /><input type="hidden" name="cycle" value={cycle} /><input type="hidden" name="currency" value={cur} />
+        <div class="font-bold text-slate-900 dark:text-white">{t.plans[k].name}</div><div class="text-xs text-slate-500">{t.plans[k].desc}</div>
+        <div class="mt-3 text-2xl font-extrabold text-slate-900 dark:text-white">{price(k)}<span class="text-xs text-slate-400 font-normal">/{t.mo}</span></div>
+        <ul class="mt-3 text-[12px] text-slate-500 space-y-1 flex-1"><li>{l.uploads ? t.uploadsPerMonth.replace('{n}', String(l.uploads)) : t.unlimitedUploads}</li><li>{l.profiles} {t.profiles} · {l.seats} {l.seats > 1 ? t.seats : t.seat}</li><li>FFmpeg {l.ffmpegMinutes} min</li><li>AI {l.aiShorts}</li>{l.tiktok && <li>TikTok ✓</li>}{l.whitelabel && <li>{t.whitelabel} ✓</li>}{l.priority && <li>{t.prioritySupport} ✓</li>}</ul>
+        <button class={`${current ? 'btn-secondary' : 'btn-primary'} btn-sm mt-3`} disabled={current || user.id !== user0.id}>{current ? b.currentPlan : b.choose}</button>
+      </form>); })}
+  </div>
+  <p class="mt-4 text-[11px] text-slate-400"><i class="fa-solid fa-circle-info mr-1"></i>{b.note}</p>
+</AppLayout>

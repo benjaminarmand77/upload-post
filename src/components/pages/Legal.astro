@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { legalBySlug, LEGAL, COMPANY } from '../../lib/content/legal';
+import { isLang, localePath, fmtDate } from '../../lib/i18n';
+interface Props { slug: string }
+const l = legalBySlug(Astro.props.slug)!;
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+---
+<BaseLayout title={`${l.title[txt]} | Upload-Post`} description={l.sections[txt][0][1][0].slice(0, 155)}>
+  <section class="bg-white dark:bg-slate-950 pt-12 pb-6"><div class="container-x max-w-3xl"><h1 class="text-4xl font-extrabold text-slate-900 dark:text-white">{l.title[txt]}</h1><p class="mt-2 text-sm text-slate-500">{fr ? 'Dernière mise à jour' : 'Last updated'}: {fmtDate(COMPANY.updated, lang)}</p><nav class="mt-4 flex flex-wrap gap-2 text-xs">{LEGAL.map((x) => <a href={L(`/${x.slug}/`)} class={`rounded-md px-2 py-1 border ${x.slug === l.slug ? 'border-brand-500 text-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-500'}`}>{x.title[txt]}</a>)}</nav></div></section>
+  <section class="lp-section-gray !pt-6"><div class="container-x max-w-3xl card p-8 prose-up">{l.sections[txt].map(([h, ps]) => <><h2 class="!mt-6 first:!mt-0">{h}</h2>{ps.map((p) => <p>{p}</p>)}</>)}</div></section>
+</BaseLayout>

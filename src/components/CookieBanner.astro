@@ -1,0 +1,58 @@
+---
+import { localePath } from '../lib/i18n';
+const lang = Astro.locals.lang;
+const t = Astro.locals.t;
+const L = (p: string) => localePath(lang, p);
+---
+<div id="cookie-banner" class="hidden fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[70] max-w-xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-elevated" role="dialog" aria-live="polite" aria-label={t.cookie.title}>
+  <h3 class="text-base font-semibold text-slate-900 dark:text-white">{t.cookie.title}</h3>
+  <p class="mt-1.5 text-sm text-slate-600 dark:text-slate-400">{t.cookie.body} <a href={L('/cookies/')} class="underline">{t.cookie.policy}</a> · <a href={L('/data-and-privacy-policy/')} class="underline">{t.cookie.privacy}</a></p>
+  <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <button type="button" class="btn-primary !py-2.5" data-consent="all">{t.cookie.acceptAll}</button>
+    <button type="button" class="btn-primary !py-2.5" data-consent="none">{t.cookie.rejectAll}</button>
+    <button type="button" class="btn-secondary !py-2.5" data-cookie-prefs>{t.cookie.customise}</button>
+  </div>
+</div>
+
+<div id="cookie-prefs" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cookie-prefs-title">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-prefs-close></div>
+  <div class="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-elevated">
+    <h3 id="cookie-prefs-title" class="text-lg font-semibold text-slate-900 dark:text-white">{t.cookie.prefsTitle}</h3>
+    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{t.cookie.prefsBody} <a href={L('/cookies/')} class="underline">{t.cookie.policy}</a></p>
+    <div class="mt-5 space-y-4">
+      <div class="flex items-start justify-between gap-4"><div><div class="font-medium text-slate-900 dark:text-white text-sm">{t.cookie.necessary} <span class="chip ml-1">{t.cookie.alwaysActive}</span></div><p class="text-xs text-slate-500 mt-1">{t.cookie.necessaryDesc}</p></div><button type="button" class="switch opacity-60 cursor-not-allowed" aria-checked="true" disabled><span></span></button></div>
+      <div class="flex items-start justify-between gap-4"><div><div class="font-medium text-slate-900 dark:text-white text-sm">{t.cookie.analytics}</div><p class="text-xs text-slate-500 mt-1">{t.cookie.analyticsDesc}</p></div><button type="button" class="switch" role="switch" aria-checked="false" data-cat="analytics"><span></span></button></div>
+      <div class="flex items-start justify-between gap-4"><div><div class="font-medium text-slate-900 dark:text-white text-sm">{t.cookie.marketing}</div><p class="text-xs text-slate-500 mt-1">{t.cookie.marketingDesc}</p></div><button type="button" class="switch" role="switch" aria-checked="false" data-cat="marketing"><span></span></button></div>
+    </div>
+    <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <button type="button" class="btn-primary !py-2.5" data-consent="all">{t.cookie.acceptAll}</button>
+      <button type="button" class="btn-secondary !py-2.5" data-consent="none">{t.cookie.rejectAll}</button>
+      <button type="button" class="btn-dark !py-2.5" data-consent="save">{t.cookie.save}</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const KEY = 'up_consent';
+  const banner = document.getElementById('cookie-banner')!;
+  const prefs = document.getElementById('cookie-prefs')!;
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
+  const write = (v: any) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch {} document.cookie = `${KEY}=${encodeURIComponent(JSON.stringify(v))}; path=/; max-age=15552000; SameSite=Lax`; window.dispatchEvent(new CustomEvent('consentchange', { detail: v })); };
+  const current = read();
+  if (!current) banner.classList.remove('hidden');
+  const switches = prefs.querySelectorAll<HTMLButtonElement>('[data-cat]');
+  const syncSwitches = (v: any) => switches.forEach((s) => s.setAttribute('aria-checked', String(!!v?.[s.dataset.cat!])));
+  syncSwitches(current);
+  switches.forEach((s) => s.addEventListener('click', () => s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') !== 'true'))));
+  const openPrefs = () => { syncSwitches(read()); prefs.classList.remove('hidden'); };
+  const closeAll = () => { prefs.classList.add('hidden'); banner.classList.add('hidden'); };
+  document.querySelectorAll('[data-cookie-prefs]').forEach((b) => b.addEventListener('click', openPrefs));
+  prefs.querySelectorAll('[data-prefs-close]').forEach((b) => b.addEventListener('click', () => prefs.classList.add('hidden')));
+  document.querySelectorAll<HTMLButtonElement>('[data-consent]').forEach((b) => b.addEventListener('click', () => {
+    const mode = b.dataset.consent;
+    const v = mode === 'all' ? { necessary: true, analytics: true, marketing: true }
+      : mode === 'none' ? { necessary: true, analytics: false, marketing: false }
+      : { necessary: true, analytics: prefs.querySelector('[data-cat="analytics"]')!.getAttribute('aria-checked') === 'true', marketing: prefs.querySelector('[data-cat="marketing"]')!.getAttribute('aria-checked') === 'true' };
+    write({ ...v, ts: Date.now() }); closeAll();
+  }));
+</script>

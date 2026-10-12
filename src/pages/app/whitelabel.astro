@@ -1,0 +1,39 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import { getAppDict } from '../../i18n/app';
+import { PLATFORMS } from '../../lib/platforms';
+import { listProfiles } from '../../server/uploads';
+import { limitsOf } from '../../server/plans';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const w = a.whitelabel;
+const owner = user.owner_user_id || user.id; const profiles = listProfiles(owner); const limits = limitsOf(user);
+const site = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+const sel = Astro.url.searchParams.get('profile') || profiles[0]?.username || 'default';
+---
+<AppLayout title={w.title} subtitle={w.subtitle} active="whitelabel" wide>
+  {!limits.whitelabel && <div class="mb-5 rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"><i class="fa-solid fa-crown mr-2"></i>{w.planRequired} <a href="/app/billing" class="underline">{a.common.upgrade}</a></div>}
+  <div class="grid lg:grid-cols-[1fr_1fr] gap-6">
+    <form id="wl" class="card p-5 space-y-3">
+      <div><label class="label">{w.profile}</label><select name="username" class="input input-select">{profiles.map((p) => <option value={p.username} selected={p.username === sel}>{p.username}</option>)}</select></div>
+      <div class="grid sm:grid-cols-2 gap-3"><div><label class="label">{w.redirect}</label><input name="redirect_url" type="url" class="input" placeholder="https://your-saas.com/done" /></div><div><label class="label">{w.logo}</label><input name="logo_image" type="url" class="input" placeholder="https://your-saas.com/logo.png" /></div></div>
+      <div><label class="label">{w.titleField}</label><input name="connect_title" class="input" placeholder="Connect your social accounts" /></div>
+      <div><label class="label">{w.descField}</label><input name="connect_description" class="input" placeholder="Connect your accounts to let us publish for you." /></div>
+      <div class="grid sm:grid-cols-2 gap-3"><div><label class="label">{w.button}</label><input name="redirect_button_text" class="input" placeholder="Back to the app" /></div><div><label class="label">{w.language}</label><select name="language" class="input input-select"><option value="">auto</option>{['en', 'es', 'de', 'fr', 'pt', 'pl', 'tr'].map((l) => <option value={l}>{l}</option>)}</select></div></div>
+      <div><label class="label">{w.platforms}</label><div class="flex flex-wrap gap-1.5">{PLATFORMS.map((p) => <label class="cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-500/15"><input type="checkbox" name="platforms" value={p.key} class="sr-only" checked={['tiktok', 'instagram', 'linkedin', 'youtube', 'facebook', 'x', 'threads'].includes(p.key)} /><PlatformIcon platform={p.key} size="text-xs" />{p.name}</label>)}</div></div>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="show_calendar" class="rounded" checked />{w.calendar}</label>
+      <button class="btn-primary"><i class="fa-solid fa-link"></i>{w.generate}</button>
+    </form>
+    <div class="space-y-4">
+      <div class="card p-5" id="link-card" hidden><div class="font-semibold text-slate-900 dark:text-white">{w.link}</div><div class="mt-2 flex gap-2"><code id="link" class="input font-mono text-xs flex-1 break-all"></code><button type="button" class="btn-primary btn-sm" data-copy="#link">{a.common.copy}</button></div><a id="open" href="#" target="_blank" class="btn-secondary btn-sm mt-3"><i class="fa-regular fa-eye"></i>{w.preview}</a></div>
+      <div class="card p-5"><div class="font-semibold text-slate-900 dark:text-white mb-2">{w.apiSnippet}</div><pre id="snippet" class="rounded-lg bg-slate-900 text-slate-200 p-3 text-[11px] font-mono overflow-auto whitespace-pre-wrap"></pre></div>
+    </div>
+  </div>
+  <script define:vars={{ site }}>
+    const form = document.getElementById('wl'); const api = window.api, toast = window.toast;
+    const body = () => { const fd = new FormData(form); const o = {}; for (const [k, v] of fd.entries()) { if (k === 'platforms') (o.platforms ||= []).push(v); else if (k === 'show_calendar') o.show_calendar = true; else if (v) o[k] = v; } if (!fd.get('show_calendar')) o.show_calendar = false; return o; };
+    const snippet = () => { document.getElementById('snippet').textContent = `curl -X POST ${site}/api/uploadposts/users/generate-jwt \\\n  -H 'Authorization: Apikey YOUR_API_KEY' -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(body())}'`; };
+    form.addEventListener('input', snippet); form.addEventListener('change', snippet); snippet();
+    form.addEventListener('submit', async (e) => { e.preventDefault(); try { const d = await api('/api/uploadposts/users/generate-jwt', { method: 'POST', body: JSON.stringify(body()) }); document.getElementById('link').textContent = d.access_url; document.getElementById('open').href = d.access_url; document.getElementById('link-card').hidden = false; toast('✓'); } catch (err) { toast(err.message, 'err'); } });
+  </script>
+</AppLayout>

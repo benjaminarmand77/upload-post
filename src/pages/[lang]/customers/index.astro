@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PlatformIcon from '../../../components/PlatformIcon.astro';
+import Cta from '../../../components/marketing/Cta.astro';
+import { CUSTOMERS } from '../../../lib/showcase';
+import type { PlatformKey } from '../../../lib/platforms';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+const s = fr ? { title: 'Témoignages clients', sub: 'De vrais créateurs, médias, agences et SaaS racontent comment Upload-Post a changé leur façon de publier.', read: 'Lire l\'histoire' } : { title: 'Customer stories', sub: 'Real creators, media, agencies and SaaS on how Upload-Post changed the way they publish.', read: 'Read the story' };
+---
+<BaseLayout title={`${s.title} | Upload-Post`} description={s.sub}>
+  <section class="bg-white dark:bg-slate-950 pt-12 pb-8 text-center"><div class="container-x"><h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white">{s.title}</h1><p class="mt-4 max-w-2xl mx-auto text-slate-500 dark:text-slate-400">{s.sub}</p></div></section>
+  <section class="lp-section-gray !pt-4"><div class="container-x grid sm:grid-cols-2 lg:grid-cols-3 gap-5">{CUSTOMERS.map((c) => <a href={L(`/customers/${c.slug}/`)} class="card card-hover p-6 flex flex-col"><div class="flex items-center gap-3"><span class="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white font-bold" style={`background:${c.color}`}>{c.initials}</span><div><div class="font-semibold text-slate-900 dark:text-white">{c.name}</div><div class="text-xs text-slate-500">{c.industry[txt]}</div></div></div><p class="mt-4 text-sm text-slate-500 dark:text-slate-400 flex-1">{c.summary[txt]}</p><div class="mt-4 flex items-center justify-between"><span class="flex gap-1.5">{c.platforms.slice(0, 6).map((k) => <PlatformIcon platform={k as PlatformKey} size="text-sm" />)}</span><span class="text-sm font-semibold text-brand-600">{s.read} →</span></div></a>)}</div></section>
+  <Cta title={Astro.locals.t.home.testimonials.title} label={Astro.locals.t.common.startFree} />
+</BaseLayout>

@@ -1,0 +1,98 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import { getAppDict } from '../../i18n/app';
+import { PLATFORMS, NAV_PLATFORMS, PLATFORM_MAP, type PlatformKey } from '../../lib/platforms';
+import { listProfiles, accountsOf, getProfile } from '../../server/uploads';
+import { limitsOf } from '../../server/plans';
+import { providerSummary } from '../../server/providers';
+import { getQueueSettings, previewQueue } from '../../server/queue';
+import { fmtDate } from '../../lib/i18n';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const p = a.profiles; const L = lang === 'fr' ? 'fr' : 'en';
+const owner = user.owner_user_id || user.id;
+const profiles = listProfiles(owner); const limits = limitsOf(user);
+const q = Astro.url.searchParams;
+const current = getProfile(owner, q.get('profile') || profiles[0]?.username || 'default') || profiles[0];
+const accounts = current ? accountsOf(current.id) : [];
+const accMap = Object.fromEntries(accounts.map((x) => [x.platform, x]));
+const summary = Object.fromEntries(providerSummary().map((s) => [s.key, s]));
+const connected = q.get('connected'); const error = q.get('error'); const credPlatform = q.get('credentials') as PlatformKey | null;
+const queue = current ? getQueueSettings(current.id) : null; const preview = current ? previewQueue(current.id, 6) : null;
+const credDefs = Object.fromEntries(PLATFORMS.filter((x) => x.auth === 'credentials').map((x) => [x.key, x.credentialFields!.map((f) => ({ key: f.key, label: f.label[L], type: f.type || 'text', placeholder: f.placeholder || '', help: f.help?.[L] || '' }))]));
+const names = Object.fromEntries(PLATFORMS.map((x) => [x.key, x.name]));
+---
+<AppLayout title={p.title} subtitle={p.subtitle} active="profiles" wide>
+  {connected && <div class="mb-5 rounded-xl border border-emerald-300/60 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-circle-check mr-2"></i>{p.connectedOk.replace('{name}', names[connected] || connected)}</div>}
+  {error && <div class="mb-5 rounded-xl border border-rose-300/60 bg-rose-50 dark:bg-rose-500/10 px-4 py-3 text-sm text-rose-800 dark:text-rose-300"><i class="fa-solid fa-triangle-exclamation mr-2"></i>{p.errorPrefix} {error}</div>}
+  <div class="grid lg:grid-cols-[260px_1fr] gap-6">
+    <aside class="space-y-3">
+      <div class="card p-4">
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-2"><span>{profiles.length} {p.profileLimit.replace('{n}', String(limits.profiles))}</span></div>
+        <ul class="space-y-1">{profiles.map((pr) => <li><a href={`/app/manage-users?profile=${encodeURIComponent(pr.username)}`} class={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${current?.id === pr.id ? 'bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-semibold' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}><span class="truncate"><i class="fa-solid fa-user text-slate-400 mr-2"></i>{pr.username}</span><span class="text-[11px] text-slate-400">{accountsOf(pr.id).length}</span></a></li>)}</ul>
+        <form id="new-profile" class="mt-3 flex gap-1.5"><input name="username" class="input !py-2 text-sm" placeholder={p.username} pattern="[a-zA-Z0-9][a-zA-Z0-9._@+-]{0,63}" required /><button class="btn-primary btn-sm !px-3" title={p.newProfile}><i class="fa-solid fa-plus"></i></button></form>
+        <p class="help">{p.usernameHelp}</p>
+      </div>
+      {current && <div class="card p-4"><h3 class="text-sm font-semibold text-slate-900 dark:text-white">{p.queue}</h3><p class="help">{p.queueHelp}</p>
+        <form id="queue-form" class="mt-3 space-y-3 text-sm" data-profile={current.username}>
+          <div><label class="label">{p.timezone}</label><input name="timezone" class="input !py-2" value={queue!.timezone} list="tz-list" /><datalist id="tz-list">{['UTC', 'Europe/Paris', 'Europe/London', 'Europe/Madrid', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles', 'America/Sao_Paulo', 'Asia/Tokyo', 'Asia/Singapore', 'Australia/Sydney'].map((z) => <option value={z}></option>)}</datalist></div>
+          <div><label class="label">{p.slots}</label><div id="slots" class="space-y-1.5">{queue!.slots.map((s) => <div class="flex gap-1.5 items-center"><input type="time" class="input !py-1.5 !w-auto" value={`${String(s.hour).padStart(2, '0')}:${String(s.minute).padStart(2, '0')}`} /><button type="button" class="text-slate-400 hover:text-rose-500" data-remove-slot><i class="fa-solid fa-xmark"></i></button></div>)}</div><button type="button" id="add-slot" class="mt-1.5 text-xs text-brand-600"><i class="fa-solid fa-plus mr-1"></i>{p.addSlot}</button></div>
+          <div><label class="label">{p.days}</label><div class="flex flex-wrap gap-1">{p.dayNames.map((d, i) => <label class={`cursor-pointer rounded-md border px-2 py-1 text-xs ${queue!.days_of_week.includes(i) ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300' : 'border-slate-200 dark:border-slate-700'}`}><input type="checkbox" class="sr-only" name="day" value={i} checked={queue!.days_of_week.includes(i)} />{d}</label>)}</div></div>
+          <button class="btn-secondary btn-sm w-full">{a.common.save}</button>
+        </form>
+        <div class="mt-3"><div class="text-xs font-semibold text-slate-500 mb-1">{p.nextSlots}</div><ul class="text-xs space-y-0.5 text-slate-500">{preview!.slots.slice(0, 5).map((s) => <li class="flex items-center gap-2"><span class={`h-1.5 w-1.5 rounded-full ${s.available ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>{s.datetime_local.replace('T', ' ').slice(0, 16)}{s.scheduled_post && <span class="truncate text-slate-400">· {s.scheduled_post.title}</span>}</li>)}</ul></div>
+      </div>}
+    </aside>
+
+    <section>
+      {current && <div class="flex items-center justify-between mb-4"><div><h2 class="text-lg font-bold text-slate-900 dark:text-white">{current.username}</h2><p class="text-xs text-slate-500">{p.created} {fmtDate(current.created_at, lang)} · <code class="font-mono">user="{current.username}"</code></p></div><div class="flex gap-2"><a href={`/app/whitelabel?profile=${encodeURIComponent(current.username)}`} class="btn-secondary btn-sm"><i class="fa-solid fa-link"></i>{p.connectLink}</a>{profiles.length > 1 && <button type="button" id="delete-profile" class="btn-secondary btn-sm !text-rose-500" data-username={current.username} data-confirm={p.deleteWarn}><i class="fa-solid fa-trash"></i>{p.deleteProfile}</button>}</div></div>}
+      <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        {NAV_PLATFORMS.map((k) => { const pl = PLATFORM_MAP[k]; const acc = accMap[k]; const s = summary[k]; return (
+          <div class={`card p-4 flex flex-col ${acc ? 'border-emerald-300/60 dark:border-emerald-500/30' : ''}`}>
+            <div class="flex items-center gap-3"><span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800"><PlatformIcon platform={k} size="text-lg" /></span><div class="min-w-0 flex-1"><div class="font-semibold text-slate-900 dark:text-white">{pl.name}</div><div class="text-[11px] text-slate-500 truncate">{acc ? `@${acc.account_name}` : pl.auth === 'oauth' ? 'OAuth' : (lang === 'fr' ? 'Clé / identifiants' : 'Key / credentials')}</div></div>{s?.sandbox && !acc && <span class="chip" title="Sandbox">{a.common.sandbox}</span>}</div>
+            <div class="mt-3 flex items-center justify-between">
+              {acc ? <span class={acc.status === 'connected' ? 'badge-ok' : 'badge-warn'}><i class="fa-solid fa-circle text-[6px]"></i>{acc.status === 'connected' ? p.connected : acc.status}{acc.sandbox ? ` · ${a.common.sandbox}` : ''}</span> : <span class="badge-muted">{p.notConnected}</span>}
+              <div class="flex gap-1.5">
+                {acc && <button type="button" class="btn-ghost btn-sm !px-2 text-rose-500" data-disconnect={k} data-profile={current?.username} title={a.common.disconnect}><i class="fa-solid fa-plug-circle-xmark"></i></button>}
+                {pl.auth === 'oauth' ? <a href={`/app/connect/${k}?profile=${encodeURIComponent(current?.username || 'default')}`} class={`${acc ? 'btn-secondary' : 'btn-primary'} btn-sm`}>{acc ? a.common.reconnect : a.common.connect}</a> : <button type="button" class={`${acc ? 'btn-secondary' : 'btn-primary'} btn-sm`} data-cred={k}>{acc ? a.common.reconnect : a.common.connect}</button>}
+              </div>
+            </div>
+          </div>); })}
+      </div>
+    </section>
+  </div>
+
+  <!-- Credentials modal -->
+  <div id="cred-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4"><div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-cred-close></div>
+    <form id="cred-form" class="relative card w-full max-w-md p-6"><input type="hidden" name="platform" /><input type="hidden" name="profile" value={current?.username || 'default'} />
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white" id="cred-title"></h3><p class="text-sm text-slate-500 mt-1" id="cred-help"></p>
+      <div id="cred-fields" class="mt-4 space-y-3"></div>
+      <label class="mt-4 flex items-center gap-2 text-xs text-slate-500"><input type="checkbox" name="mode" value="sandbox" class="rounded" />{p.sandboxToggle}</label>
+      <div class="mt-5 flex justify-end gap-2"><button type="button" class="btn-secondary btn-sm" data-cred-close>{a.common.cancel}</button><button class="btn-primary btn-sm" id="cred-submit">{a.common.connect}</button></div>
+    </form></div>
+
+  <script define:vars={{ credDefs, names, strings: { credHelp: p.credHelp, connectTitle: p.connectTitle, confirm: a.common.confirmDelete } }}>
+    const api = window.api, toast = window.toast;
+    const modal = document.getElementById('cred-modal'), form = document.getElementById('cred-form');
+    document.querySelectorAll('[data-cred]').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.cred; form.platform.value = k;
+      document.getElementById('cred-title').textContent = strings.connectTitle.replace('{name}', names[k]);
+      document.getElementById('cred-help').textContent = strings.credHelp.replace('{name}', names[k]);
+      document.getElementById('cred-fields').innerHTML = credDefs[k].map((f) => `<div><label class="label">${f.label}</label><input class="input" name="${f.key}" type="${f.type}" placeholder="${f.placeholder}" ${f.key === 'relays' ? '' : 'required'} autocomplete="off" />${f.help ? `<p class="help">${f.help}</p>` : ''}</div>`).join('');
+      modal.classList.remove('hidden');
+    }));
+    modal.querySelectorAll('[data-cred-close]').forEach((b) => b.addEventListener('click', () => modal.classList.add('hidden')));
+    const params = new URLSearchParams(location.search); if (params.get('credentials') && credDefs[params.get('credentials')]) document.querySelector(`[data-cred="${params.get('credentials')}"]`)?.click();
+    form.addEventListener('submit', async (e) => { e.preventDefault(); const btn = document.getElementById('cred-submit'); btn.disabled = true; try { const fd = new FormData(form); const d = await api('/app/connect/credentials', { method: 'POST', body: fd }); toast(`${names[d.account.platform]} ✓ @${d.account.account_name}`); location.href = `/app/manage-users?profile=${encodeURIComponent(form.profile.value)}&connected=${d.account.platform}`; } catch (err) { toast(err.message, 'err'); btn.disabled = false; } });
+    document.querySelectorAll('[data-disconnect]').forEach((b) => b.addEventListener('click', async () => { if (!confirm(strings.confirm)) return; await api('/app/connect/disconnect', { method: 'POST', body: JSON.stringify({ platform: b.dataset.disconnect, profile: b.dataset.profile }) }); location.reload(); }));
+    document.getElementById('new-profile')?.addEventListener('submit', async (e) => { e.preventDefault(); const username = e.target.username.value.trim(); try { await api('/api/uploadposts/users', { method: 'POST', body: JSON.stringify({ username }) }); location.href = `/app/manage-users?profile=${encodeURIComponent(username)}`; } catch (err) { toast(err.message, 'err'); } });
+    document.getElementById('delete-profile')?.addEventListener('click', async (e) => { const b = e.currentTarget; if (!confirm(b.dataset.confirm)) return; await api('/api/uploadposts/users', { method: 'DELETE', body: JSON.stringify({ username: b.dataset.username }) }); location.href = '/app/manage-users'; });
+    const qf = document.getElementById('queue-form');
+    if (qf) {
+      document.getElementById('add-slot').addEventListener('click', () => { const d = document.createElement('div'); d.className = 'flex gap-1.5 items-center'; d.innerHTML = '<input type="time" class="input !py-1.5 !w-auto" value="12:00" /><button type="button" class="text-slate-400 hover:text-rose-500" data-remove-slot><i class="fa-solid fa-xmark"></i></button>'; document.getElementById('slots').appendChild(d); });
+      document.getElementById('slots').addEventListener('click', (e) => { const b = e.target.closest('[data-remove-slot]'); if (b) b.parentElement.remove(); });
+      qf.addEventListener('submit', async (e) => { e.preventDefault(); const slots = [...qf.querySelectorAll('input[type=time]')].map((i) => ({ hour: +i.value.split(':')[0], minute: +i.value.split(':')[1] })); const days = [...qf.querySelectorAll('input[name=day]:checked')].map((i) => +i.value); try { await api('/api/uploadposts/queue/settings', { method: 'POST', body: JSON.stringify({ profile_username: qf.dataset.profile, timezone: qf.timezone.value, slots, days_of_week: days }) }); toast('✓'); location.reload(); } catch (err) { toast(err.message, 'err'); } });
+      qf.querySelectorAll('input[name=day]').forEach((i) => i.addEventListener('change', () => { i.parentElement.classList.toggle('border-brand-500', i.checked); i.parentElement.classList.toggle('bg-brand-50', i.checked); i.parentElement.classList.toggle('text-brand-700', i.checked); }));
+    }
+  </script>
+</AppLayout>

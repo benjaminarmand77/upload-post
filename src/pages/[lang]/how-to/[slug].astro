@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/marketing/PageHero.astro';
+import CodeBlock from '../../../components/marketing/CodeBlock.astro';
+import Cta from '../../../components/marketing/Cta.astro';
+import FaqList from '../../../components/marketing/FaqList.astro';
+import { guideBySlug, GUIDES } from '../../../lib/content/howto';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const g = guideBySlug(Astro.params.slug!); if (!g) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+const related = g.related.map((r) => GUIDES.find((x) => x.slug === r)!).filter(Boolean);
+const jsonLd = { '@context': 'https://schema.org', '@type': 'HowTo', name: g.title[txt], description: g.desc[txt], step: g.steps[txt].map(([n, t]) => ({ '@type': 'HowToStep', name: n, text: t })) };
+---
+<BaseLayout title={`${g.title[txt]} | Upload-Post`} description={g.desc[txt]} jsonLd={jsonLd}>
+  <PageHero breadcrumb={[{ label: fr ? 'Guides pratiques' : 'How-to guides', href: '/how-to/' }, { label: g.title[txt] }]} title={g.title[txt]} subtitle={g.desc[txt]} cta={{ label: Astro.locals.t.common.startFree, href: `/app/login?source=${lang}-howto-${g.slug}` }} cta2={{ label: Astro.locals.t.common.apiDocs, href: '/docs/', icon: 'fa-book' }}><CodeBlock slot="aside" title={g.codeTitle || 'terminal'} code={g.code} /></PageHero>
+  <section class="lp-section-gray"><div class="container-x max-w-4xl"><ol class="space-y-4">{g.steps[txt].map(([n, t], i) => <li class="card p-6 flex gap-4 reveal"><span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white font-bold">{i + 1}</span><div><h2 class="font-semibold text-slate-900 dark:text-white text-lg">{n}</h2><p class="mt-1 text-slate-500 dark:text-slate-400">{t}</p></div></li>)}</ol></div></section>
+  <FaqList title="FAQ" items={g.faq[txt]} />
+  <section class="lp-section-gray"><div class="container-x"><h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">{fr ? 'Guides associés' : 'Related guides'}</h2><div class="grid md:grid-cols-2 gap-4">{related.map((r) => <a href={L(`/how-to/${r.slug}/`)} class="card card-hover p-5"><div class="font-semibold text-slate-900 dark:text-white"><i class={`${r.icon.startsWith('fa-brands') ? r.icon : 'fa-solid ' + r.icon} text-brand-500 mr-2`}></i>{r.title[txt]}</div><p class="mt-1 text-sm text-slate-500">{r.desc[txt]}</p></a>)}<a href={L('/how-to/')} class="card p-5 flex items-center justify-center font-semibold text-brand-600">{fr ? 'Tous les guides' : 'All guides'} →</a></div></div></section>
+  <Cta title={g.title[txt]} label={Astro.locals.t.common.startFree} href={`/app/login?source=${lang}-howto-${g.slug}`} note={Astro.locals.t.common.noCreditCard} />
+</BaseLayout>

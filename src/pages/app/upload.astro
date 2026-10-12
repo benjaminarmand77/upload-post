@@ -1,0 +1,141 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getAppDict } from '../../i18n/app';
+import { PLATFORMS, PLATFORM_MAP } from '../../lib/platforms';
+import { listProfiles, accountsOf } from '../../server/uploads';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const u = a.upload;
+const owner = user.owner_user_id || user.id;
+const profiles = listProfiles(owner).map((p) => ({ username: p.username, accounts: accountsOf(p.id).map((x) => ({ platform: x.platform, name: x.account_name, sandbox: !!x.sandbox })) }));
+const plat = Object.fromEntries(PLATFORMS.map((p) => [p.key, { name: p.name, icon: p.icon, color: p.color, video: p.supports.video, photos: p.supports.photos, text: p.supports.text, document: !!p.supports.document, limit: p.textLimit, maxPhotos: p.maxPhotos || 1 }]));
+const prefill = { title: Astro.url.searchParams.get('title') || '', description: Astro.url.searchParams.get('description') || '', type: Astro.url.searchParams.get('type') || 'video' };
+const tz = user.timezone || 'UTC';
+const fr = lang === 'fr';
+---
+<AppLayout title={u.title} subtitle={u.subtitle} active="upload" wide>
+  <div class="grid lg:grid-cols-[1fr_380px] gap-6" id="up" data-profiles={JSON.stringify(profiles)} data-plat={JSON.stringify(plat)} data-tz={tz} data-xlinks={user.x_links_addon ? '1' : '0'}>
+    <form id="upload-form" class="space-y-6" enctype="multipart/form-data">
+      <div class="card p-5">
+        <label class="label">{u.type}</label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup">
+          {[['video', u.video, 'fa-video'], ['photo', u.photos, 'fa-images'], ['text', u.text, 'fa-align-left'], ['document', u.document, 'fa-file-pdf']].map(([v, l, i]) => <label class="type-opt cursor-pointer rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-center text-sm font-medium hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-500/15"><input type="radio" name="media_type" value={v} class="sr-only" checked={prefill.type === v} /><i class={`fa-solid ${i} block text-lg mb-1 text-brand-500`}></i>{l}</label>)}
+        </div>
+        <div class="mt-4 grid sm:grid-cols-2 gap-4">
+          <div><label class="label" for="profile">{u.profile}</label><select id="profile" name="user" class="input input-select">{profiles.map((p) => <option value={p.username}>{p.username} ({p.accounts.length})</option>)}</select></div>
+          <div><label class="label">{u.platforms}</label><div id="platforms" class="flex flex-wrap gap-1.5 min-h-10"></div><p id="no-accounts" class="hidden help">{u.noAccounts} <a href="/app/manage-users" class="text-brand-600 underline">{u.connectFirst}</a></p></div>
+        </div>
+      </div>
+
+      <div class="card p-5" id="media-card">
+        <label class="label">{u.media}</label>
+        <div id="drop" class="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 text-center hover:border-brand-400 transition cursor-pointer">
+          <i class="fa-solid fa-cloud-arrow-up text-3xl text-brand-500"></i><p class="mt-2 text-sm text-slate-500">{u.mediaHelp}</p>
+          <input type="file" id="file" class="hidden" /><div id="file-list" class="mt-3 flex flex-wrap gap-2 justify-center"></div>
+        </div>
+        <div class="mt-3 flex items-center gap-2"><span class="text-xs text-slate-500">{u.orUrl}</span><input id="media-url" class="input !py-2 text-sm" placeholder="https://…/video.mp4" /></div>
+      </div>
+
+      <div class="card p-5 space-y-4">
+        <div><label class="label" for="title">{u.titleLabel}</label><textarea id="title" name="title" rows="3" class="input" maxlength="5000">{prefill.title}</textarea><div class="flex justify-between"><p class="help">{u.titleHelp}</p><span class="help" id="title-count">0 {u.chars}</span></div><p id="x-warn" class="hidden mt-1 text-xs text-amber-600"><i class="fa-solid fa-triangle-exclamation mr-1"></i>{u.xLinkWarn}</p></div>
+        <div><label class="label" for="description">{u.description} <span class="text-slate-400 font-normal">({a.common.optional})</span></label><textarea id="description" name="description" rows="3" class="input">{prefill.description}</textarea><p class="help">{u.descriptionHelp}</p></div>
+        <div><label class="label" for="first_comment">{u.firstComment} <span class="text-slate-400 font-normal">({a.common.optional})</span></label><input id="first_comment" name="first_comment" class="input" /></div>
+        <a href="/app/ai-shorts" class="inline-flex items-center gap-2 text-sm text-brand-600 dark:text-brand-400"><i class="fa-solid fa-wand-magic-sparkles"></i>{u.aiHelp}</a>
+      </div>
+
+      <div class="card p-5" id="pp-card"><h3 class="font-semibold text-slate-900 dark:text-white mb-3">{u.perPlatform}</h3><div id="pp" class="space-y-3"></div></div>
+
+      <div class="card p-5">
+        <label class="label">{u.when}</label>
+        <div class="flex flex-wrap gap-2">
+          {[['now', u.now, 'fa-bolt'], ['schedule', u.schedule, 'fa-calendar'], ['queue', u.queue, 'fa-list-ol']].map(([v, l, i]) => <label class="cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-500/15"><input type="radio" name="when" value={v} class="sr-only" checked={v === 'now'} /><i class={`fa-solid ${i} mr-1.5 text-brand-500`}></i>{l}</label>)}
+        </div>
+        <div id="sched" class="hidden mt-3 grid sm:grid-cols-2 gap-3"><div><label class="label">{u.scheduledDate}</label><input type="datetime-local" name="scheduled_date" class="input" /></div><div><label class="label">{u.timezone}</label><input name="timezone" class="input" value={tz} /></div></div>
+        <label class="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" name="async_upload" class="rounded" />{u.async}</label>
+      </div>
+      <div class="flex items-center gap-3"><button id="submit" class="btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i><span id="submit-label">{u.submit}</span></button><span id="progress" class="hidden text-sm text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>{u.publishing}</span></div>
+    </form>
+
+    <aside class="space-y-4">
+      <div class="card p-5"><h3 class="font-semibold text-slate-900 dark:text-white"><i class="fa-regular fa-eye mr-2 text-brand-500"></i>{fr ? 'Aperçu' : 'Preview'}</h3>
+        <div class="mt-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-3"><div class="flex items-center gap-2 text-xs"><span class="h-7 w-7 rounded-full bg-brand-600 text-white inline-flex items-center justify-center font-bold" id="pv-initial">U</span><span class="font-semibold" id="pv-user">@default</span></div><div id="pv-media" class="mt-2 aspect-[4/5] rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400"><i class="fa-regular fa-image text-3xl"></i></div><p id="pv-text" class="mt-2 text-sm whitespace-pre-wrap text-slate-700 dark:text-slate-200"></p></div></div>
+      <div class="card p-5" id="result" hidden><h3 class="font-semibold text-slate-900 dark:text-white">{u.resultTitle}</h3><div id="result-body" class="mt-3 space-y-2 text-sm"></div><a href="/app/history" class="btn-secondary btn-sm mt-3">{u.viewHistory}</a></div>
+      <div class="card p-5 text-xs text-slate-500"><div class="font-semibold text-slate-700 dark:text-slate-200 mb-1">API</div><pre id="curl-preview" class="rounded-lg bg-slate-900 text-slate-200 p-3 font-mono overflow-auto whitespace-pre-wrap"></pre></div>
+    </aside>
+  </div>
+
+  <script define:vars={{ s: { chars: u.chars, submit: u.submit, submitSchedule: u.submitSchedule, submitQueue: u.submitQueue, openPost: u.openPost, dropHere: u.dropHere, ok: a.common.success, failed: a.common.failed, scheduled: a.common.scheduled }, fr }}>
+    const root = document.getElementById('up'); const profiles = JSON.parse(root.dataset.profiles); const PL = JSON.parse(root.dataset.plat); const xlinks = root.dataset.xlinks === '1';
+    const form = document.getElementById('upload-form'); const api = window.api, toast = window.toast;
+    const $ = (id) => document.getElementById(id);
+    let files = [];
+    const mediaType = () => form.media_type.value; const profile = () => profiles.find((p) => p.username === form.user.value) || profiles[0];
+    const selected = () => [...document.querySelectorAll('#platforms input:checked')].map((i) => i.value);
+    const PP = {
+      tiktok: [['privacy_level', 'select', ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'FOLLOWER_OF_CREATOR', 'SELF_ONLY']], ['post_mode', 'select', ['DIRECT_POST', 'MEDIA_UPLOAD']], ['disable_comment', 'check'], ['disable_duet', 'check'], ['disable_stitch', 'check'], ['brand_organic_toggle', 'check'], ['brand_content_toggle', 'check'], ['is_aigc', 'check']],
+      instagram: [['media_type', 'select', (t) => t === 'video' ? ['REELS', 'STORIES'] : ['IMAGE', 'STORIES']], ['share_to_feed', 'check', true], ['collaborators', 'text'], ['user_tags', 'text'], ['location_id', 'text'], ['share_mode', 'select', ['CUSTOM', 'TRIAL_REELS_SHARE_TO_FOLLOWERS_IF_LIKED', 'TRIAL_REELS_DONT_SHARE_TO_FOLLOWERS']]],
+      youtube: [['privacyStatus', 'select', ['public', 'unlisted', 'private']], ['tags', 'text'], ['categoryId', 'text'], ['selfDeclaredMadeForKids', 'check'], ['containsSyntheticMedia', 'check'], ['embeddable', 'check', true]],
+      linkedin: [['visibility', 'select', ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN']], ['target_linkedin_page_id', 'text'], ['linkedin_link_url', 'text']],
+      facebook: [['facebook_page_id', 'text'], ['facebook_media_type', 'select', (t) => t === 'video' ? ['REELS', 'STORIES'] : ['POSTS', 'STORIES']], ['video_state', 'select', ['PUBLISHED', 'DRAFT']], ['facebook_link_url', 'text']],
+      x: [['reply_settings', 'select', ['', 'following', 'mentionedUsers', 'subscribers', 'verified']], ['x_long_text_as_post', 'check'], ['quote_tweet_id', 'text'], ['reply_to_id', 'text'], ['poll_options', 'text'], ['community_id', 'text']],
+      threads: [['threads_topic_tag', 'text'], ['threads_long_text_as_post', 'check']],
+      pinterest: [['pinterest_board_id', 'text'], ['pinterest_link', 'text'], ['pinterest_alt_text', 'text']],
+      reddit: [['subreddit', 'text'], ['flair_id', 'text'], ['reddit_link_url', 'text']],
+      bluesky: [['bluesky_link_url', 'text'], ['reply_to_id', 'text']],
+      google_business: [['topic_type', 'select', ['STANDARD', 'EVENT', 'OFFER']], ['cta_type', 'select', ['', 'BOOK', 'ORDER', 'SHOP', 'LEARN_MORE', 'SIGN_UP', 'CALL']], ['cta_url', 'text'], ['coupon_code', 'text']],
+      mastodon: [['mastodon_visibility', 'select', ['public', 'unlisted', 'private']]], wordpress: [['wordpress_status', 'select', ['publish', 'draft']], ['categories', 'text']], devto: [['tags', 'text'], ['canonical_url', 'text'], ['devto_published', 'select', ['true', 'false']]], hashnode: [['tags', 'text'], ['cover_url', 'text']], telegram: [['telegram_parse_mode', 'select', ['', 'HTML', 'Markdown']]], listmonk: [['listmonk_send', 'select', ['true', 'false']]], lemmy: [['nsfw', 'check']], discord: [['discord_username', 'text']], slack: [], nostr: [], whop: [],
+    };
+    const renderPlatforms = () => {
+      const p = profile(); const t = mediaType(); const box = $('platforms'); box.innerHTML = '';
+      const avail = (p?.accounts || []).filter((acc) => PL[acc.platform]?.[t === 'photo' ? 'photos' : t]);
+      $('no-accounts').classList.toggle('hidden', (p?.accounts || []).length > 0);
+      for (const acc of avail) { const l = document.createElement('label'); l.className = 'cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 text-xs font-medium has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:has-[:checked]:bg-brand-500/15'; l.innerHTML = `<input type="checkbox" name="platform[]" value="${acc.platform}" class="sr-only" checked /><i class="${PL[acc.platform].icon}" style="color:${PL[acc.platform].color}"></i>${PL[acc.platform].name}${acc.sandbox ? ' <span class="text-[9px] text-slate-400">sandbox</span>' : ''}`; box.appendChild(l); }
+      $('pv-user').textContent = '@' + (p?.username || 'default'); $('pv-initial').textContent = (p?.username || 'U')[0].toUpperCase();
+      renderPP(); renderCurl();
+    };
+    const renderPP = () => {
+      const t = mediaType(); const box = $('pp'); box.innerHTML = '';
+      for (const k of selected()) { const def = PP[k] || []; if (!def.length && t !== 'text') { continue; }
+        const d = document.createElement('details'); d.className = 'group rounded-xl border border-slate-200 dark:border-slate-700'; d.innerHTML = `<summary class="flex items-center gap-2 px-3 py-2.5 cursor-pointer text-sm font-medium"><i class="${PL[k].icon}" style="color:${PL[k].color}"></i>${PL[k].name}<i class="fa-solid fa-chevron-down ml-auto text-xs text-slate-400 transition group-open:rotate-180"></i></summary><div class="px-3 pb-3 grid sm:grid-cols-2 gap-3"><div class="sm:col-span-2"><label class="label">${PL[k].name} ${fr ? 'titre spécifique' : 'specific title'}</label><input name="${k}_title" class="input !py-2 text-sm" placeholder="${fr ? 'Par défaut : titre général' : 'Defaults to the main title'}" /></div>${def.map(([name, kind, opt]) => { const options = typeof opt === 'function' ? opt(t) : opt; if (kind === 'check') return `<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="${name}" value="true" ${opt === true ? 'checked' : ''} class="rounded" />${name}</label>`; if (kind === 'select') return `<div><label class="label">${name}</label><select name="${name}" class="input input-select !py-2 text-sm">${options.map((o) => `<option value="${o}">${o || '—'}</option>`).join('')}</select></div>`; return `<div><label class="label">${name}</label><input name="${name}" class="input !py-2 text-sm" /></div>`; }).join('')}</div>`; box.appendChild(d); }
+      $('pp-card').style.display = box.children.length ? '' : 'none';
+    };
+    const renderCurl = () => { const t = mediaType(); const ep = { video: 'upload', photo: 'upload_photos', text: 'upload_text', document: 'upload_document' }[t]; const lines = [`curl -H 'Authorization: Apikey YOUR_API_KEY' \\`, `  -F 'user=${form.user.value}' \\`, ...selected().map((k) => `  -F 'platform[]=${k}' \\`), `  -F 'title=${(form.title.value || 'Hello').replace(/'/g, "\\'").slice(0, 40)}' \\`, t === 'video' ? `  -F 'video=@video.mp4' \\` : t === 'photo' ? `  -F 'photos[]=@photo1.jpg' \\` : t === 'document' ? `  -F 'document=@deck.pdf' \\` : null, `  -X POST ${location.origin}/api/${ep}`].filter(Boolean); $('curl-preview').textContent = lines.join('\n'); };
+    const renderPreview = () => { $('pv-text').textContent = form.title.value; const m = $('pv-media'); if (files[0]) { const url = URL.createObjectURL(files[0]); m.innerHTML = files[0].type.startsWith('video') ? `<video src="${url}" class="h-full w-full object-cover rounded-xl" muted autoplay loop playsinline></video>` : files[0].type.startsWith('image') ? `<img src="${url}" class="h-full w-full object-cover rounded-xl" />` : `<i class="fa-solid fa-file-pdf text-4xl"></i>`; } else m.innerHTML = '<i class="fa-regular fa-image text-3xl"></i>'; m.style.display = mediaType() === 'text' ? 'none' : ''; };
+    const onType = () => { const t = mediaType(); $('media-card').style.display = t === 'text' ? 'none' : ''; $('file').multiple = t === 'photo'; $('file').accept = t === 'video' ? 'video/*' : t === 'photo' ? 'image/*,video/*' : t === 'document' ? '.pdf,.ppt,.pptx,.doc,.docx' : ''; files = []; renderFiles(); renderPlatforms(); renderPreview(); };
+    const renderFiles = () => { $('file-list').innerHTML = files.map((f, i) => `<span class="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs">${f.name} <span class="text-slate-400">${(f.size / 1048576).toFixed(1)} MB</span> <button type="button" data-rm="${i}" class="text-rose-500">&times;</button></span>`).join(''); };
+    form.querySelectorAll('input[name=media_type]').forEach((r) => r.addEventListener('change', onType));
+    form.user.addEventListener('change', renderPlatforms);
+    $('platforms').addEventListener('change', () => { renderPP(); renderCurl(); });
+    $('drop').addEventListener('click', (e) => { if (!e.target.closest('[data-rm]')) $('file').click(); });
+    $('drop').addEventListener('dragover', (e) => { e.preventDefault(); $('drop').classList.add('border-brand-500'); });
+    $('drop').addEventListener('dragleave', () => $('drop').classList.remove('border-brand-500'));
+    $('drop').addEventListener('drop', (e) => { e.preventDefault(); $('drop').classList.remove('border-brand-500'); addFiles(e.dataTransfer.files); });
+    $('file').addEventListener('change', (e) => addFiles(e.target.files));
+    $('file-list').addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (b) { files.splice(+b.dataset.rm, 1); renderFiles(); renderPreview(); } });
+    const addFiles = (list) => { const t = mediaType(); files = t === 'photo' ? [...files, ...list].slice(0, 35) : [list[0]]; renderFiles(); renderPreview(); };
+    form.title.addEventListener('input', () => { const v = form.title.value; $('title-count').textContent = `${v.length} ${s.chars}`; $('x-warn').classList.toggle('hidden', !(selected().includes('x') && /https?:\/\//.test(v) && !xlinks)); renderPreview(); renderCurl(); });
+    form.querySelectorAll('input[name=when]').forEach((r) => r.addEventListener('change', () => { const w = form.when.value; $('sched').classList.toggle('hidden', w !== 'schedule'); $('submit-label').textContent = w === 'schedule' ? s.submitSchedule : w === 'queue' ? s.submitQueue : s.submit; }));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); const t = mediaType(); const plats = selected(); if (!plats.length) return toast(fr ? 'Choisissez au moins une plateforme' : 'Pick at least one platform', 'err');
+      const fd = new FormData(); fd.append('user', form.user.value); plats.forEach((p) => fd.append('platform[]', p));
+      for (const el of form.querySelectorAll('input[name], select[name], textarea[name]')) { if (['media_type', 'when', 'platform[]', 'user', 'scheduled_date', 'timezone', 'async_upload'].includes(el.name)) continue; if (el.type === 'checkbox') { if (el.checked) fd.append(el.name, 'true'); else if (['share_to_feed', 'embeddable'].includes(el.name)) fd.append(el.name, 'false'); continue; } if (el.value !== '') fd.append(el.name, el.value); }
+      if (t === 'video') { if (files[0]) fd.append('video', files[0]); else if ($('media-url').value) fd.append('video', $('media-url').value); }
+      if (t === 'photo') { files.forEach((f) => fd.append('photos[]', f)); if ($('media-url').value) $('media-url').value.split(/\s*,\s*/).forEach((u) => fd.append('photos[]', u)); }
+      if (t === 'document') { if (files[0]) fd.append('document', files[0]); else if ($('media-url').value) fd.append('document', $('media-url').value); }
+      const w = form.when.value; if (w === 'schedule') { if (!form.scheduled_date.value) return toast(fr ? 'Choisissez une date' : 'Pick a date', 'err'); fd.append('scheduled_date', form.scheduled_date.value); fd.append('timezone', form.timezone.value); } if (w === 'queue') fd.append('add_to_queue', 'true'); if (form.async_upload.checked) fd.append('async_upload', 'true');
+      const ep = { video: 'upload', photo: 'upload_photos', text: 'upload_text', document: 'upload_document' }[t];
+      $('submit').disabled = true; $('progress').classList.remove('hidden');
+      try {
+        const d = await api(`/api/${ep}`, { method: 'POST', body: fd, headers: { 'x-upload-source': 'dashboard' } });
+        $('result').hidden = false; const body = $('result-body');
+        if (d.job_id) body.innerHTML = `<div class="badge-ok"><i class="fa-solid fa-calendar-check"></i>${s.scheduled} · ${new Date(d.scheduled_date).toLocaleString()}</div><div class="text-xs text-slate-500 mt-1">job_id: <code>${d.job_id}</code></div>`;
+        else if (d.results) body.innerHTML = Object.entries(d.results).map(([k, r]) => `<div class="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2"><span class="flex items-center gap-2"><i class="${PL[k].icon}" style="color:${PL[k].color}"></i>${PL[k].name}</span>${r.success ? `<a href="${r.url}" target="_blank" class="badge-ok">${s.ok} <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>` : `<span class="badge-err" title="${(r.error || '').replace(/"/g, '&quot;')}">${s.failed}</span>`}</div>${r.success ? '' : `<p class="text-xs text-rose-500">${r.error || ''}</p>`}`).join('');
+        else body.innerHTML = `<div class="badge-ok"><i class="fa-solid fa-spinner fa-spin"></i>${d.message}</div><div class="text-xs text-slate-500 mt-1">request_id: <code>${d.request_id}</code></div>`;
+        if (d.request_id && !d.results) pollStatus(d.request_id);
+        toast('✓');
+      } catch (err) { toast(err.message, 'err'); $('result').hidden = false; $('result-body').innerHTML = `<p class="text-rose-500">${err.message}</p>`; }
+      finally { $('submit').disabled = false; $('progress').classList.add('hidden'); }
+    });
+    const pollStatus = async (rid) => { for (let i = 0; i < 60; i++) { await new Promise((r) => setTimeout(r, 2500)); const d = await api(`/api/uploadposts/status?request_id=${rid}`); if (d.status === 'completed') { $('result-body').innerHTML = d.results.map((r) => `<div class="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2"><span class="flex items-center gap-2"><i class="${PL[r.platform].icon}" style="color:${PL[r.platform].color}"></i>${PL[r.platform].name}</span>${r.success ? `<a href="${r.url}" target="_blank" class="badge-ok">${s.ok}</a>` : `<span class="badge-err">${s.failed}</span>`}</div>`).join(''); return; } } };
+    onType();
+  </script>
+</AppLayout>

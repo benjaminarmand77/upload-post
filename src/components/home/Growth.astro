@@ -1,0 +1,35 @@
+---
+import { LANDING_STATS } from '../../lib/showcase';
+const t = Astro.locals.t; const s = t.home.growth;
+const stats = [
+  { v: LANDING_STATS.total_posts, label: s.posts, icon: 'fa-cloud-arrow-up', suffix: '+', key: 'posts', path: 'M0,40 L25,36 L50,30 L75,22 L100,12 L125,8 L150,2' },
+  { v: LANDING_STATS.platforms, label: s.platforms, icon: 'fa-share-nodes', suffix: '', key: 'platforms', path: 'M0,40 L20,40 L20,30 L45,30 L45,22 L70,22 L70,15 L100,15 L100,8 L125,8 L125,2 L150,2' },
+  { v: LANDING_STATS.total_users, label: s.users, icon: 'fa-users', suffix: '+', key: 'users', path: 'M0,40 L30,34 L60,28 L90,20 L120,10 L150,2' },
+];
+---
+<section class="lp-section-gray">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 grid md:grid-cols-3 card divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800 overflow-hidden">
+      {stats.map((st) => (
+        <div class="p-8 text-center">
+          <span class="icon-box"><i class={`fa-solid ${st.icon}`}></i></span>
+          <div class="mt-4 text-4xl md:text-5xl font-extrabold text-brand-500 dark:text-brand-400 tabular-nums"><span data-countup={st.v} data-stat={st.key}>0</span>{st.suffix}</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{st.label}</div>
+          <svg viewBox="0 0 150 42" class="mx-auto mt-5 h-10 w-40 overflow-visible" fill="none"><path d={st.path} stroke="url(#spark-g)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </div>))}
+      <svg width="0" height="0" class="absolute"><defs><linearGradient id="spark-g" x1="0" x2="1"><stop offset="0" stop-color="#818cf8" stop-opacity=".4"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs></svg>
+    </div>
+  </div>
+</section>
+<script>
+  const fmt = (n: number) => new Intl.NumberFormat(document.documentElement.lang || 'en').format(n);
+  const run = (el: HTMLElement) => {
+    const target = Number(el.dataset.countup || 0); const dur = 1600; const t0 = performance.now();
+    const step = (now: number) => { const p = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(Math.round(target * e)); if (p < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  };
+  const els = document.querySelectorAll<HTMLElement>('[data-countup]');
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { run(e.target as HTMLElement); io.unobserve(e.target); } }), { threshold: 0.4 });
+  els.forEach((el) => io.observe(el));
+</script>

@@ -1,0 +1,9 @@
+---
+import { TOOLS } from '../../../lib/content/tools';
+import { isLang } from '../../../lib/i18n';
+/** Maps English tool slugs to the page files (named after the French slug). */
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const t = TOOLS.find((x) => x.slug.en === Astro.params.slug);
+if (!t || t.slug.fr === Astro.params.slug) return new Response(null, { status: 404 });
+return Astro.rewrite(`/${Astro.params.lang}/tools/${t.slug.fr}/`);
+---

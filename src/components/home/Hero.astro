@@ -1,0 +1,106 @@
+---
+import PlatformIcon from '../PlatformIcon.astro';
+import { NAV_PLATFORMS, PLATFORM_MAP } from '../../lib/platforms';
+import { localePath, fmtNumber } from '../../lib/i18n';
+import { LANDING_STATS, CUSTOMERS } from '../../lib/showcase';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const h = t.home.hero;
+const L = (p: string) => localePath(lang, p);
+const signup = `/app/login?source=${lang === 'en' ? 'home' : lang}`;
+const tools = [
+  { label: 'n8n', href: '/n8n-integration-guide/', icon: 'n8n' },
+  { label: 'Make', href: '/make-integration-guide/', icon: 'fa-solid fa-m' },
+  { label: 'Zapier', href: '/zapier-integration-guide/', icon: 'fa-solid fa-bolt' },
+  { label: 'Airtable', href: '/airtable-integration-guide/', icon: 'fa-solid fa-table-cells' },
+];
+const avatars = ['Eric', 'Phil Clark', 'Sugewhite', 'Can Tuğan'];
+const avatarColors = ['#f59e0b', '#10b981', '#6366f1', '#ec4899'];
+---
+<section class="relative overflow-hidden bg-white dark:bg-slate-950 pt-6 pb-10 md:pb-16">
+  <div class="glow -top-32 -left-24 h-[420px] w-[420px] bg-brand-500/20"></div>
+  <div class="glow top-40 right-0 h-[380px] w-[380px] bg-violet-500/15"></div>
+  <div class="bg-grid-perspective"></div>
+
+  <div class="container-x relative">
+    <div class="grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-10 items-center">
+      <div class="animate-fade-up">
+        <h1 class="text-4xl sm:text-5xl lg:text-[52px] font-extrabold tracking-tight leading-[1.08]">
+          <span class="text-slate-900 dark:text-white">{h.titleA}</span><br />
+          <span class="gradient-text">{h.titleB}</span>
+        </h1>
+        <div class="mt-5 inline-block rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[13px] leading-relaxed text-emerald-700 dark:text-emerald-300 max-w-full">
+          {h.joinA} <strong class="font-bold" data-stat="users">+{fmtNumber(LANDING_STATS.total_users, lang)}</strong> {h.joinB}
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-2" aria-label={t.common.allPlatforms}>
+          {NAV_PLATFORMS.map((k) => { const p = PLATFORM_MAP[k]; return (
+            <a href={L(`/platforms/${p.slug}/`)} title={p.name} class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/70 hover:border-brand-400 hover:-translate-y-0.5 transition">
+              <PlatformIcon platform={p.key} size="text-[15px]" />
+            </a>); })}
+        </div>
+
+        <p class="mt-6 text-[17px] text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">{h.intro}</p>
+
+        <ul class="mt-5 space-y-2.5">
+          {h.bullets.map((b) => (
+            <li class="flex items-start gap-3 text-[15px] text-slate-700 dark:text-slate-300">
+              <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-300 text-xs"><i class={`fa-solid ${b.icon}`}></i></span>
+              <span><strong class="font-semibold text-slate-900 dark:text-white">{b.b}</strong> {b.t}</span>
+            </li>))}
+        </ul>
+
+        <div class="mt-7">
+          <a href={signup} class="btn-primary btn-lg">{h.cta}</a>
+          <p class="mt-3 flex items-center gap-2 text-[13px] text-slate-500 dark:text-slate-400"><i class="fa-solid fa-circle-check text-emerald-500"></i>{h.reassurance}</p>
+        </div>
+
+        <a href={L('/reviews/')} class="mt-5 inline-flex items-center gap-3 group">
+          <div class="flex -space-x-2">
+            {avatars.map((a, i) => <span class="inline-flex h-8 w-8 items-center justify-center rounded-full ring-2 ring-white dark:ring-slate-950 text-[11px] font-bold text-white" style={`background:${avatarColors[i]}`} title={a}>{a[0]}</span>)}
+          </div>
+          <div>
+            <div class="flex items-center gap-1 text-amber-400 text-sm">{[0,1,2,3,4].map(() => <i class="fa-solid fa-star"></i>)}<span class="ml-1.5 font-bold text-slate-900 dark:text-white">{h.rating}</span></div>
+            <div class="text-xs text-slate-500 group-hover:text-brand-500">{h.lovedBy}</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="animate-fade-up [animation-delay:120ms]">
+        <div class="terminal">
+          <div class="terminal-bar"><span class="terminal-dot bg-rose-500"></span><span class="terminal-dot bg-amber-400"></span><span class="terminal-dot bg-emerald-500"></span><span class="ml-3 rounded bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">{h.terminal}</span></div>
+<pre id="hero-curl"><span class="tok-cmd">curl</span> \
+ <span class="tok-flag">-H</span> <span class="tok-str">'Authorization: Apikey your-api-key-here'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'video=@/path/to/your/video.mp4'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'title="Your Awesome Title"'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'user="test"'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'platform[]=tiktok'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'platform[]=instagram'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'platform[]=youtube'</span> \
+ <span class="tok-flag">-X</span> <span class="tok-cmd">POST</span> <span class="tok-url">https://api.upload-post.com/api/upload</span></pre>
+        </div>
+        <div class="mt-5 flex flex-col items-center gap-3">
+          <a href={L('/ai-agents/')} class="btn-primary"><i class="fa-solid fa-robot"></i>{h.aiCompatible}<i class="fa-solid fa-arrow-right text-xs"></i></a>
+          <p class="text-xs text-slate-500">{h.integratesA} <span class="sr-only">n8n, Make, Zapier, Airtable</span> {h.integratesB}</p>
+          <div class="flex flex-wrap justify-center gap-2">
+            {tools.map((x) => (
+              <a href={L(x.href)} class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-brand-400 transition">
+                {x.icon === 'n8n' ? <span class="text-[#ea4b71] font-black text-[10px]">n8n</span> : <i class={`${x.icon} text-brand-500`}></i>}{x.label}
+              </a>))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-14 border-t border-slate-200/70 dark:border-slate-800/70 pt-8 text-center">
+      <p class="text-sm text-slate-500 dark:text-slate-400">{h.customersIntro} <a href={L('/customers/')} class="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{h.readStories}</a></p>
+      <div class="marquee mt-6 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+        <div class="marquee-track gap-10">
+          {[...CUSTOMERS, ...CUSTOMERS].map((c) => (
+            <a href={L(`/customers/${c.slug}/`)} class="inline-flex items-center gap-2.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition whitespace-nowrap">
+              <span class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-bold text-white" style={`background:${c.color}`}>{c.initials}</span>
+              <span class="font-semibold text-sm">{c.name}</span>
+            </a>))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

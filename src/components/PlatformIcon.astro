@@ -1,0 +1,12 @@
+---
+import { PLATFORM_MAP, CUSTOM_SVG, type PlatformKey } from '../lib/platforms';
+interface Props { platform: PlatformKey; class?: string; colored?: boolean; size?: string }
+const { platform, class: cls = '', colored = true, size = 'text-base' } = Astro.props;
+const p = PLATFORM_MAP[platform];
+const isSvg = p.icon.startsWith('svg:');
+const style = colored ? `color:${p.color}` : undefined;
+const invert = colored && p.invertDark ? 'dark:invert' : '';
+---
+{isSvg
+  ? <span class={`inline-flex items-center justify-center ${size} ${invert} ${cls}`} style={style} set:html={CUSTOM_SVG[p.icon.slice(4)].replace('<svg', '<svg style="width:1em;height:1em"')} />
+  : <i class={`${p.icon} ${size} ${invert} ${cls}`} style={style} aria-hidden="true"></i>}

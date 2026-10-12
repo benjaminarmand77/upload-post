@@ -1,0 +1,109 @@
+---
+import '../styles/global.css';
+import NavBar from '../components/NavBar.astro';
+import Footer from '../components/Footer.astro';
+import CookieBanner from '../components/CookieBanner.astro';
+import { LANGS, localePath, langInfo, splitLang } from '../lib/i18n';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonicalPath?: string;
+  noindex?: boolean;
+  hideNav?: boolean;
+  hideFooter?: boolean;
+  bodyClass?: string;
+  ogImage?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+}
+const lang = Astro.locals.lang;
+const t = Astro.locals.t;
+const info = langInfo(lang);
+const {
+  title = t.meta.title,
+  description = t.meta.description,
+  noindex = false,
+  hideNav = false,
+  hideFooter = false,
+  bodyClass = '',
+  ogImage = '/images/og-image.svg',
+  jsonLd,
+} = Astro.props;
+const site = Astro.site ?? new URL('http://127.0.0.1:4321');
+const [, bare] = splitLang(Astro.url.pathname);
+const canonicalPath = Astro.props.canonicalPath ?? localePath(lang, bare);
+const canonical = new URL(canonicalPath, site).toString();
+const theme = Astro.locals.theme;
+---
+<!doctype html>
+<html lang={info.locale} dir={info.dir} class={theme === 'dark' ? 'dark' : ''}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="theme-color" content={theme === 'dark' ? '#020617' : '#ffffff'} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(ogImage, site).toString()} />
+    <meta property="og:site_name" content="Upload-Post" />
+    <meta property="og:locale" content={info.locale.replace('-', '_')} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {LANGS.map((l) => <link rel="alternate" hreflang={l.code === 'br' ? 'pt-BR' : l.code} href={new URL(localePath(l.code, bare), site).toString()} />)}
+    <link rel="alternate" hreflang="x-default" href={new URL(bare, site).toString()} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var cookie = (document.cookie.match(/(?:^|; )theme=(light|dark)/) || [])[1];
+          var theme = stored || cookie || 'dark';
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+          if (!cookie || cookie !== theme) document.cookie = 'theme=' + theme + '; path=/; max-age=31536000; SameSite=Lax';
+        } catch (e) {}
+      })();
+    </script>
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <slot name="head" />
+  </head>
+  <body class={`min-h-screen flex flex-col ${bodyClass}`}>
+    {!hideNav && <NavBar />}
+    <main class="flex-1">
+      <slot />
+    </main>
+    {!hideFooter && <Footer />}
+    <CookieBanner />
+    <script>
+      // Reveal-on-scroll
+      const els = document.querySelectorAll<HTMLElement>('.reveal');
+      if ('IntersectionObserver' in window && els.length) {
+        const io = new IntersectionObserver((entries) => {
+          for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); }
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+        els.forEach((el) => io.observe(el));
+      } else els.forEach((el) => el.classList.add('is-visible'));
+
+      // Copy buttons
+      document.addEventListener('click', async (ev) => {
+        const btn = (ev.target as HTMLElement).closest<HTMLElement>('[data-copy]');
+        if (!btn) return;
+        const sel = btn.getAttribute('data-copy')!;
+        const src = sel.startsWith('#') ? document.querySelector(sel)?.textContent ?? '' : sel;
+        try { await navigator.clipboard.writeText(src.trim()); } catch {}
+        const prev = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-check"></i> ' + (btn.dataset.copied || 'Copied');
+        setTimeout(() => { btn.innerHTML = prev; }, 1600);
+      });
+    </script>
+  </body>
+</html>

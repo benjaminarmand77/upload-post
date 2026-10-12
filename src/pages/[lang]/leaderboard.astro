@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import Sparkline from '../../components/ui/Sparkline.astro';
+import { topGrowers } from '../../server/analytics';
+import { isLang, fmtCompact } from '../../lib/i18n';
+import type { PlatformKey } from '../../lib/platforms';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr';
+const s = fr ? { title: 'Leaderboard', sub: 'Les comptes de réseaux sociaux avec la plus forte croissance parmi nos utilisateurs, mis à jour quotidiennement.', followers: 'Plus d\'abonnés', likes: 'Plus de likes', views: 'Plus de vues', fl: 'abonnés', lk: 'likes', vw: 'vues', note: 'Données réelles de comptes réels. Les identités sont gardées anonymes pour protéger la vie privée de nos utilisateurs.', cta: 'Commencer à grandir gratuitement', nocc: 'Aucune carte de crédit requise' } : { title: 'Leaderboard', sub: 'The fastest-growing social media accounts among our users, updated daily.', followers: 'Most followers', likes: 'Most likes', views: 'Most views', fl: 'followers', lk: 'likes', vw: 'views', note: 'Real data from real accounts. Identities are kept anonymous to protect our users\' privacy.', cta: 'Start growing for free', nocc: 'No credit card required' };
+const data = topGrowers().data.accounts;
+const c = (n: number) => n >= 1e9 ? (n / 1e6).toFixed(1) + 'M' : fmtCompact(n, lang);
+---
+<BaseLayout title={`${s.title} - ${fr ? 'Comptes de réseaux sociaux en plus forte croissance' : 'Fastest growing social media accounts'}`} description={s.sub}>
+  <section class="bg-white dark:bg-slate-950 pt-10 pb-6 text-center"><div class="container-x"><h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white"><i class="fa-solid fa-trophy text-amber-400 mr-3"></i>{s.title}</h1><p class="mt-4 text-slate-500 max-w-xl mx-auto">{s.sub}</p>
+    <div class="mt-6 inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 text-sm" id="tabs">{[['total_followers', s.followers, 'fa-users'], ['total_likes', s.likes, 'fa-heart'], ['total_views', s.views, 'fa-eye']].map(([k, l, i], idx) => <button type="button" data-sort={k} class={`rounded-lg px-4 py-2 font-medium ${idx === 0 ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-300'}`}><i class={`fa-solid ${i} mr-1.5`}></i>{l}</button>)}</div></div></section>
+  <section class="lp-section-gray !pt-6"><div class="container-x max-w-3xl">
+    <ol id="board" class="space-y-3">
+      {data.map((g, i) => <li class="card p-4 flex items-center gap-4" data-row data-f={g.total_followers} data-l={g.total_likes} data-v={g.total_views}><span class="w-6 text-center font-bold text-slate-400">{i + 1}</span><div class="flex-1 min-w-0"><div class="font-semibold text-slate-900 dark:text-white">{g.anonymous_name}</div><div class="mt-0.5 flex items-center gap-2 text-xs text-slate-400">{g.platforms.slice(0, 6).map((k: string) => <PlatformIcon platform={k as PlatformKey} colored={false} size="text-[11px]" />)}<span class="text-emerald-500 ml-1"><i class="fa-solid fa-arrow-trend-up"></i> {g.growth_pct.toLocaleString(lang)}%</span></div></div><div class="hidden sm:block w-24"><Sparkline values={g.sparkline.map((x: any) => x.followers)} class="w-full h-8" /></div><div class="text-right"><div class="text-lg font-bold text-brand-600 dark:text-brand-400" data-main>{c(g.total_followers)}</div><div class="text-[10px] text-slate-400" data-main-label>{s.fl}</div></div><div class="hidden md:block text-right text-xs text-slate-500"><div><b class="text-slate-700 dark:text-slate-200">{c(g.total_likes)}</b> {s.lk}</div><div><b class="text-slate-700 dark:text-slate-200">{c(g.total_views)}</b> {s.vw}</div></div></li>)}
+    </ol>
+    <p class="mt-8 text-center text-xs text-slate-400">{s.note}</p>
+    <div class="mt-6 text-center"><a href={`/app/login?source=${lang}-leaderboard`} class="btn-primary btn-lg">{s.cta}</a><p class="mt-2 text-xs text-slate-500">{s.nocc}</p></div>
+  </div></section>
+  <script define:vars={{ labels: { total_followers: s.fl, total_likes: s.lk, total_views: s.vw } }}>
+    const fmt = (n) => n >= 1e9 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n);
+    document.querySelectorAll('[data-sort]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.sort; const attr = { total_followers: 'f', total_likes: 'l', total_views: 'v' }[k]; document.querySelectorAll('[data-sort]').forEach((x) => { x.classList.toggle('bg-brand-600', x === b); x.classList.toggle('text-white', x === b); }); const board = document.getElementById('board'); const rows = [...board.querySelectorAll('[data-row]')].sort((a, c) => Number(c.dataset[attr]) - Number(a.dataset[attr])); rows.forEach((r, i) => { r.querySelector('span').textContent = i + 1; r.querySelector('[data-main]').textContent = fmt(Number(r.dataset[attr])); r.querySelector('[data-main-label]').textContent = labels[k]; board.appendChild(r); }); }));
+  </script>
+</BaseLayout>

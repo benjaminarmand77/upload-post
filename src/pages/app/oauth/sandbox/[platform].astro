@@ -1,0 +1,33 @@
+---
+/** Simulated consent screen, shown when no OAuth app is configured for the platform. */
+import { PLATFORM_MAP, type PlatformKey } from '../../../../lib/platforms';
+import PlatformIcon from '../../../../components/PlatformIcon.astro';
+import { get } from '../../../../server/db';
+const platform = Astro.params.platform as PlatformKey;
+const p = PLATFORM_MAP[platform];
+const state = Astro.url.searchParams.get('state') || '';
+const st = get<any>('SELECT s.*, pr.username FROM oauth_states s JOIN profiles pr ON pr.id = s.profile_id WHERE s.state = ?', state);
+if (!p || !st) return Astro.redirect('/app/manage-users?error=invalid_state', 303);
+const fr = Astro.locals.lang === 'fr';
+const suggested = `${st.username}_${platform}`.replace(/[^a-z0-9_.-]/gi, '').toLowerCase();
+---
+<!doctype html>
+<html lang={fr ? 'fr' : 'en'} class="dark">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>{fr ? `Autoriser Upload-Post — ${p.name}` : `Authorize Upload-Post — ${p.name}`}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" /><style>body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}.card{background:#fff;color:#0f172a;border-radius:16px;max-width:440px;width:100%;padding:32px;box-shadow:0 30px 80px rgba(0,0,0,.5)}.ic{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:#f1f5f9;font-size:26px;margin:0 auto 16px}h1{font-size:20px;margin:0 0 8px;text-align:center}p{color:#475569;font-size:14px;line-height:1.5;margin:0 0 16px;text-align:center}ul{margin:0 0 20px;padding:0;list-style:none;font-size:13px;color:#334155}li{padding:8px 0;border-top:1px solid #e2e8f0;display:flex;gap:10px}li:last-child{border-bottom:1px solid #e2e8f0}label{display:block;font-size:12px;font-weight:600;color:#334155;margin:0 0 6px}input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:16px}.row{display:flex;gap:10px}button,a.btn{flex:1;border:0;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none}.ok{background:#4f46e5;color:#fff}.no{background:#f1f5f9;color:#334155}.tag{display:inline-block;font-size:11px;background:#fef3c7;color:#92400e;border-radius:6px;padding:3px 8px;margin:0 auto 12px}</style></head>
+<body>
+  <form class="card" method="get" action={`/app/oauth/callback/${platform}`}>
+    <div style="text-align:center"><span class="tag">{fr ? 'Mode sandbox — aucune app OAuth configurée' : 'Sandbox mode — no OAuth app configured'}</span></div>
+    <div class="ic"><PlatformIcon platform={platform} /></div>
+    <h1>{fr ? `Upload-Post souhaite accéder à votre compte ${p.name}` : `Upload-Post wants to access your ${p.name} account`}</h1>
+    <p>{fr ? `Profil : ${st.username}. Cette fenêtre simule l'écran de consentement de ${p.name}. Pour une connexion réelle, renseignez les clés ${p.name} dans le fichier .env.` : `Profile: ${st.username}. This window simulates ${p.name}'s consent screen. For a real connection, add the ${p.name} app keys in .env.`}</p>
+    <ul>
+      <li><i class="fa-solid fa-check" style="color:#16a34a"></i>{fr ? 'Publier du contenu en votre nom' : 'Publish content on your behalf'}</li>
+      <li><i class="fa-solid fa-check" style="color:#16a34a"></i>{fr ? 'Lire vos statistiques et commentaires' : 'Read your analytics and comments'}</li>
+      <li><i class="fa-solid fa-check" style="color:#16a34a"></i>{fr ? 'Voir votre profil public' : 'See your public profile'}</li>
+    </ul>
+    <label for="sandbox_name">{fr ? "Nom d'utilisateur à simuler" : 'Username to simulate'}</label>
+    <input id="sandbox_name" name="sandbox_name" value={suggested} />
+    <input type="hidden" name="state" value={state} />
+    <div class="row"><a class="btn no" href="/app/manage-users">{fr ? 'Annuler' : 'Cancel'}</a><button class="ok" type="submit">{fr ? 'Autoriser' : 'Allow'}</button></div>
+  </form>
+</body></html>

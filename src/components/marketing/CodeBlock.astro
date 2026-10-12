@@ -1,0 +1,17 @@
+---
+interface Props { title?: string; code: string; lang?: string; class?: string }
+const { title = 'terminal', code, class: cls = '' } = Astro.props;
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const hl = (s: string) => esc(s)
+  .replace(/^(\s*)(curl|npm|npx|pip|python|node|docker|git|ffmpeg|import|from|const|let|await|async|export|function|return|def|class)\b/gm, '$1<span class="tok-cmd">$2</span>')
+  .replace(/(&#39;|')([^'\n]*)(&#39;|')/g, '<span class="tok-str">\'$2\'</span>')
+  .replace(/("[^"\n]*")/g, '<span class="tok-str">$1</span>')
+  .replace(/(\s)(-[A-Za-z]{1,2}|--[a-z-]+)(?=\s)/g, '$1<span class="tok-flag">$2</span>')
+  .replace(/(https?:\/\/[^\s'"<]+)/g, '<span class="tok-url">$1</span>')
+  .replace(/^(\s*)(#.*|\/\/.*)$/gm, '$1<span class="tok-comment">$2</span>');
+const id = 'cb' + Math.random().toString(36).slice(2, 8);
+---
+<div class={`terminal ${cls}`}>
+  <div class="terminal-bar"><span class="terminal-dot bg-rose-500"></span><span class="terminal-dot bg-amber-400"></span><span class="terminal-dot bg-emerald-500"></span><span class="ml-3 rounded bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">{title}</span><button type="button" class="ml-auto text-[11px] text-slate-400 hover:text-white" data-copy={`#${id}`}><i class="fa-regular fa-copy"></i></button></div>
+  <pre id={id} set:html={hl(code)} />
+</div>

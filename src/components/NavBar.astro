@@ -1,0 +1,225 @@
+---
+import { uploadGuideSlug } from '../lib/content/templates';
+import Logo from './Logo.astro';
+import PlatformIcon from './PlatformIcon.astro';
+import { PLATFORMS, PLATFORM_MAP, NAV_PLATFORMS } from '../lib/platforms';
+import { LANGS, localePath, langInfo, splitLang } from '../lib/i18n';
+const lang = Astro.locals.lang;
+const t = Astro.locals.t;
+const L = (p: string) => localePath(lang, p);
+const [, bare] = splitLang(Astro.url.pathname);
+const user = Astro.locals.user;
+const cur = langInfo(lang);
+const cta = user ? { href: '/app/', label: t.common.dashboard } : { href: `/app/login?source=${lang}`, label: t.common.tryFree };
+const navPlatforms = NAV_PLATFORMS.map((k) => PLATFORM_MAP[k]);
+const more = [
+  { label: t.nav.make, href: '/make-integration-guide/', icon: 'fa-solid fa-m', color: '#6d00cc', sub: { label: t.nav.templates, href: '/make-templates/' } },
+  { label: t.nav.zapier, href: '/zapier-integration-guide/', icon: 'fa-solid fa-bolt', color: '#ff4a00' },
+  { label: t.nav.wordpress, href: '/wordpress-plugin/', icon: 'fa-brands fa-wordpress', color: '#21759b' },
+  { label: t.nav.airtable, href: '/airtable-integration-guide/', icon: 'fa-solid fa-table-cells', color: '#fcb400' },
+  { label: t.nav.viasocket, href: '/viasocket-integration-guide/', icon: 'fa-solid fa-plug', color: '#2f80ed' },
+  { label: t.nav.mcp, href: '/mcp/', icon: 'fa-solid fa-robot', color: '#6366f1', badge: t.nav.mcpBadge },
+];
+const ai = [
+  { label: t.nav.chatgpt, href: '/chatgpt-social-media/', icon: 'fa-solid fa-comment-dots' },
+  { label: t.nav.claude, href: '/claude-social-media/', icon: 'fa-solid fa-asterisk' },
+  { label: t.nav.gemini, href: '/gemini-social-media/', icon: 'fa-solid fa-star-of-life' },
+  { label: t.nav.aiAgents, href: '/ai-agents/', icon: 'fa-solid fa-user-astronaut' },
+];
+const res = [
+  { label: t.nav.ffmpegApi, href: '/ffmpeg-integration-guide/', icon: 'fa-solid fa-film' },
+  { label: t.nav.api, href: '/social-media-api/', icon: 'fa-solid fa-code' },
+  { label: t.nav.chatgptAds, href: '/chatgpt-ads/', icon: 'fa-solid fa-bullhorn' },
+  { label: t.nav.addToSaas, href: '/whitelabel/', icon: 'fa-solid fa-layer-group' },
+  { label: t.nav.tutorials, href: '/youtube-tutorials/', icon: 'fa-brands fa-youtube' },
+  { label: t.nav.tools, href: '/tools/', icon: 'fa-solid fa-screwdriver-wrench' },
+];
+const resources = [
+  { label: t.nav.apiDocs, href: '/docs/', icon: 'fa-solid fa-book' },
+  { label: t.nav.howTo, href: '/how-to/', icon: 'fa-solid fa-graduation-cap' },
+  { label: t.nav.leaderboard, href: '/leaderboard/', icon: 'fa-solid fa-trophy' },
+  { label: t.nav.status, href: '/status/', icon: 'fa-solid fa-signal' },
+];
+---
+<header>
+  <div class="h-20"></div>
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 px-4 sm:px-8 py-4 transition-all duration-300" data-scrolled="false">
+    <div class="container mx-auto max-w-7xl flex items-center justify-between gap-3">
+      <a href={L('/')} class="flex items-center flex-shrink-0" aria-label="Upload-Post">
+        <Logo size={40} class="h-10 w-auto" />
+        <span class="ml-2 font-bold text-slate-900 dark:text-slate-50 text-lg whitespace-nowrap">Upload-Post</span>
+      </a>
+
+      <!-- Desktop -->
+      <div class="hidden lg:flex items-center space-x-1 flex-nowrap">
+        <a href={L('/whitelabel/')} class="nav-link">{t.nav.addToSaas}</a>
+
+        <div class="relative group">
+          <button class="nav-link" aria-haspopup="true">{t.nav.platforms} <i class="fa-solid fa-chevron-down ml-1.5 text-[10px] opacity-70"></i></button>
+          <div class="dropdown w-[540px]">
+            <div class="grid grid-cols-3 gap-x-2 gap-y-0.5 p-3">
+              {navPlatforms.map((p) => (
+                <a href={L(`/platforms/${p.slug}/`)} class="dd-item"><PlatformIcon platform={p.key} size="text-[15px] w-[18px]" /><span class="truncate">{p.name}</span></a>
+              ))}
+            </div>
+            <div class="border-t border-slate-200 dark:border-slate-800 p-3">
+              <a href={L('/platforms/')} class="dd-item font-medium"><i class="fa-solid fa-layer-group text-brand-500 w-[18px] text-center"></i>{t.nav.allPlatforms}</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative group">
+          <button class="nav-link" aria-haspopup="true">{t.nav.integrations} <i class="fa-solid fa-chevron-down ml-1.5 text-[10px] opacity-70"></i></button>
+          <div class="dropdown w-[700px] grid grid-cols-[1.25fr_1fr] divide-x divide-slate-200 dark:divide-slate-800">
+            <div class="p-4">
+              <a href={L('/n8n-integration-guide/')} class="dd-item"><span class="inline-flex h-6 w-6 items-center justify-center rounded-md bg-[#ea4b71]/15 text-[#ea4b71] text-xs font-bold">n8n</span><span class="font-semibold">{t.nav.n8n}</span></a>
+              <div class="pl-9 mb-3">
+                <a href={L('/n8n-templates/')} class="dd-sub">{t.nav.workflows}</a>
+                <a href={L('/n8n/social-media-automation/')} class="dd-sub">{t.nav.agencyAutomation}</a>
+              </div>
+              <div class="dd-head">{t.nav.uploadGuides}</div>
+              <div class="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                {PLATFORMS.map((p) => (
+                  <a href={L(`/n8n/${uploadGuideSlug(p.key)}/`)} class="dd-item text-[13px]"><PlatformIcon platform={p.key} size="text-[13px] w-4" /><span class="truncate">{p.short ?? p.name}</span></a>
+                ))}
+              </div>
+            </div>
+            <div class="p-4">
+              <div class="dd-head">{t.nav.moreIntegrations}</div>
+              {more.map((m) => (
+                <div>
+                  <a href={L(m.href)} class="dd-item"><i class={`${m.icon} w-[18px] text-center`} style={`color:${m.color}`}></i><span>{m.label}</span>{m.badge && <span class="ml-1 chip bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">{m.badge}</span>}</a>
+                  {m.sub && <a href={L(m.sub.href)} class="dd-sub pl-9">{m.sub.label}</a>}
+                </div>
+              ))}
+              <div class="dd-head mt-3">{t.nav.aiAssistants}</div>
+              <div class="grid grid-cols-2 gap-x-2">
+                {ai.map((m) => <a href={L(m.href)} class="dd-item text-[13px]"><i class={`${m.icon} w-4 text-center text-brand-500`}></i>{m.label}</a>)}
+              </div>
+              <div class="dd-head mt-3">{t.nav.resourcesLabel}</div>
+              <div class="grid grid-cols-2 gap-x-2">
+                {res.map((m) => <a href={L(m.href)} class="dd-item text-[13px]"><i class={`${m.icon} w-4 text-center text-brand-500`}></i>{m.label}</a>)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <a href={L('/affiliates/')} class="nav-link">{t.nav.affiliates}</a>
+
+        <div class="relative group">
+          <button class="nav-link" aria-haspopup="true">{t.nav.resources} <i class="fa-solid fa-chevron-down ml-1.5 text-[10px] opacity-70"></i></button>
+          <div class="dropdown w-60 p-2">
+            {resources.map((m) => <a href={L(m.href)} class="dd-item"><i class={`${m.icon} w-[18px] text-center text-brand-500`}></i>{m.label}</a>)}
+          </div>
+        </div>
+
+        <a href={L('/#pricing')} class="nav-link">{t.nav.pricing}</a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" id="theme-toggle" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 text-slate-700 dark:text-slate-200 hover:text-brand-600 transition" aria-label={t.common.toggleTheme} title={t.common.toggleTheme}>
+          <span class="dark:hidden"><i class="fa-solid fa-moon"></i></span><span class="hidden dark:inline"><i class="fa-solid fa-sun"></i></span>
+        </button>
+
+        <div class="relative hidden lg:block" id="lang-menu">
+          <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-brand-400 transition" aria-haspopup="listbox" aria-expanded="false">
+            <span>{cur.flag}</span><span>{lang.toUpperCase()}</span><i class="fa-solid fa-chevron-down text-[9px] opacity-70"></i>
+          </button>
+          <div class="hidden absolute right-0 mt-2 w-48 max-h-[70vh] overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-elevated p-1.5 z-50" role="listbox">
+            {LANGS.map((l) => (
+              <a href={localePath(l.code, bare)} class={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 ${l.code === lang ? 'text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-700 dark:text-slate-300'}`} hreflang={l.code} role="option" aria-selected={l.code === lang}>
+                <span class="flex items-center gap-2"><span>{l.flag}</span>{l.name}</span>{l.code === lang && <i class="fa-solid fa-check text-xs"></i>}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <a href={cta.href} class="btn-primary btn-sm !rounded-lg !px-4 !py-2.5 !text-[13px]">{cta.label}</a>
+
+        <button type="button" id="mobile-open" class="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-800 dark:text-slate-100" aria-label={t.common.openMenu} aria-controls="mobile-menu" aria-expanded="false">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="fixed inset-0 z-[60] hidden lg:hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" data-close></div>
+    <div class="absolute inset-y-0 right-0 w-full max-w-sm bg-white dark:bg-slate-950 shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between px-5 h-20 border-b border-slate-200 dark:border-slate-800">
+        <a href={L('/')} class="flex items-center gap-2 font-bold text-slate-900 dark:text-white"><Logo size={34} />Upload-Post</a>
+        <button type="button" class="h-10 w-10 inline-flex items-center justify-center rounded-lg text-slate-700 dark:text-slate-200" aria-label={t.common.closeMenu} data-close><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-4 space-y-1">
+        <label class="flex items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-900 px-4 py-3 text-sm">
+          <span class="uppercase tracking-wide text-xs font-semibold text-slate-500">{t.common.languageLabel}</span>
+          <select class="bg-transparent font-medium text-slate-900 dark:text-white focus:outline-none" id="mobile-lang">
+            {LANGS.map((l) => <option value={localePath(l.code, bare)} selected={l.code === lang}>{l.flag} {l.name}</option>)}
+          </select>
+        </label>
+        <a href={L('/whitelabel/')} class="m-link">{t.nav.addToSaas}</a>
+        <details class="group"><summary class="m-link flex items-center justify-between cursor-pointer">{t.nav.platforms}<i class="fa-solid fa-chevron-down text-xs transition group-open:rotate-180"></i></summary>
+          <div class="grid grid-cols-2 gap-1 pb-2 pl-2">{navPlatforms.map((p) => <a href={L(`/platforms/${p.slug}/`)} class="m-sub"><PlatformIcon platform={p.key} size="text-sm w-4" />{p.name}</a>)}<a href={L('/platforms/')} class="m-sub col-span-2 font-semibold text-brand-600">{t.nav.allPlatforms}</a></div></details>
+        <details class="group"><summary class="m-link flex items-center justify-between cursor-pointer">{t.nav.integrations}<i class="fa-solid fa-chevron-down text-xs transition group-open:rotate-180"></i></summary>
+          <div class="grid grid-cols-2 gap-1 pb-2 pl-2">
+            <a href={L('/n8n-integration-guide/')} class="m-sub">n8n</a><a href={L('/n8n-templates/')} class="m-sub">{t.nav.workflows}</a>
+            {more.map((m) => <a href={L(m.href)} class="m-sub">{m.label}</a>)}
+            {ai.map((m) => <a href={L(m.href)} class="m-sub">{m.label}</a>)}
+            {res.map((m) => <a href={L(m.href)} class="m-sub">{m.label}</a>)}
+          </div></details>
+        <a href={L('/affiliates/')} class="m-link">{t.nav.affiliates}</a>
+        <details class="group"><summary class="m-link flex items-center justify-between cursor-pointer">{t.nav.docs}<i class="fa-solid fa-chevron-down text-xs transition group-open:rotate-180"></i></summary>
+          <div class="grid gap-1 pb-2 pl-2">{resources.map((m) => <a href={L(m.href)} class="m-sub">{m.label}</a>)}</div></details>
+        <a href={L('/leaderboard/')} class="m-link">{t.nav.leaderboard}</a>
+        <a href={L('/#pricing')} class="m-link">{t.nav.pricing}</a>
+      </div>
+      <div class="p-5 border-t border-slate-200 dark:border-slate-800">
+        <a href={cta.href} class="btn-primary w-full"><i class="fa-solid fa-rocket"></i>{cta.label}</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  @reference "../styles/global.css";
+  .nav-link { @apply px-2 xl:px-3 py-2 text-[14px] text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 whitespace-nowrap; }
+  .dropdown { @apply absolute top-full left-0 mt-1 rounded-xl bg-white dark:bg-slate-900 shadow-elevated border border-slate-200 dark:border-slate-700 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200 z-50; }
+  .dd-item { @apply flex items-center gap-2.5 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors; }
+  .dd-sub { @apply block px-2 py-1 text-[13px] text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 rounded-md; }
+  .dd-head { @apply px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500; }
+  .m-link { @apply block rounded-lg px-3 py-3 text-base font-medium text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-900; }
+  .m-sub { @apply flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900; }
+  #navbar[data-scrolled="true"] { @apply bg-white/85 dark:bg-slate-950/85 backdrop-blur-md shadow-sm border-b border-slate-200/60 dark:border-slate-800/60 py-2.5; }
+</style>
+
+<script>
+  const nav = document.getElementById('navbar')!;
+  const onScroll = () => nav.setAttribute('data-scrolled', String(window.scrollY > 24));
+  onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Theme
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const dark = !document.documentElement.classList.contains('dark');
+    document.documentElement.classList.toggle('dark', dark);
+    const v = dark ? 'dark' : 'light';
+    try { localStorage.setItem('theme', v); } catch {}
+    document.cookie = `theme=${v}; path=/; max-age=31536000; SameSite=Lax`;
+  });
+
+  // Language dropdown
+  const lm = document.getElementById('lang-menu');
+  if (lm) {
+    const btn = lm.querySelector('button')!; const panel = lm.querySelector('div')!;
+    btn.addEventListener('click', (e) => { e.stopPropagation(); const open = panel.classList.toggle('hidden'); btn.setAttribute('aria-expanded', String(!open)); });
+    document.addEventListener('click', () => { panel.classList.add('hidden'); btn.setAttribute('aria-expanded', 'false'); });
+  }
+
+  // Mobile menu
+  const mm = document.getElementById('mobile-menu')!;
+  const open = document.getElementById('mobile-open')!;
+  const setOpen = (o: boolean) => { mm.classList.toggle('hidden', !o); mm.setAttribute('aria-hidden', String(!o)); open.setAttribute('aria-expanded', String(o)); document.body.style.overflow = o ? 'hidden' : ''; };
+  open.addEventListener('click', () => setOpen(true));
+  mm.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => setOpen(false)));
+  (document.getElementById('mobile-lang') as HTMLSelectElement | null)?.addEventListener('change', (e) => { location.href = (e.target as HTMLSelectElement).value; });
+</script>

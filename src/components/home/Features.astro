@@ -1,0 +1,26 @@
+---
+import { localePath } from '../../lib/i18n';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.features;
+const L = (p: string) => localePath(lang, p);
+const signup = `/app/login?source=${lang}-features`;
+---
+<section id="features" class="lp-section-white">
+  <div class="container-x">
+    <div class="reveal"><h2 class="section-title">{s.title}</h2><p class="mt-4 text-lg text-slate-500 dark:text-slate-400 max-w-2xl">{s.subtitle}</p></div>
+    <div class="mt-12 space-y-14">
+      {s.items.map((f, i) => (
+        <div class={`grid md:grid-cols-[1fr_1.4fr] gap-8 md:gap-14 items-center reveal ${i % 2 ? 'md:[&>*:first-child]:order-2' : ''}`}>
+          <div class="relative aspect-[4/3] rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-brand-500/15 via-slate-100 dark:via-slate-900 to-violet-500/10 overflow-hidden flex items-center justify-center">
+            <div class="absolute inset-0 bg-grid opacity-60"></div>
+            <i class={`fa-solid ${f.icon} relative text-7xl text-brand-500/90 dark:text-brand-400 animate-float`}></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">{f.t}</h3>
+            <p class="mt-3 text-slate-500 dark:text-slate-400 leading-relaxed">{f.d} {f.link && <a href={L(f.link.href)} class="text-brand-600 dark:text-brand-400 hover:underline">{f.link.label}</a>}</p>
+            <span class="mt-4 chip !bg-brand-50 !text-brand-700 dark:!bg-brand-500/15 dark:!text-brand-300"><i class="fa-solid fa-circle-check mr-1.5 text-[10px]"></i>{f.chip}</span>
+          </div>
+        </div>))}
+    </div>
+    <div class="mt-12"><a href={signup} class="btn-primary">{s.cta}</a></div>
+  </div>
+</section>

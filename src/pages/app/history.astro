@@ -1,0 +1,57 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import { getAppDict } from '../../i18n/app';
+import { PLATFORMS, type PlatformKey } from '../../lib/platforms';
+import { all, get, parse } from '../../server/db';
+import { listProfiles } from '../../server/uploads';
+import { fmtDate } from '../../lib/i18n';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const h = a.history;
+const owner = user.owner_user_id || user.id;
+const q = Astro.url.searchParams; const page = Math.max(1, Number(q.get('page') || 1)); const limit = 25; const platform = q.get('platform') || ''; const profile = q.get('profile') || '';
+const where = ['r.user_id = ?']; const args: any[] = [owner]; if (platform) { where.push('r.platform = ?'); args.push(platform); } if (profile) { where.push('r.profile_username = ?'); args.push(profile); }
+const total = get<any>(`SELECT COUNT(*) AS c FROM upload_results r WHERE ${where.join(' AND ')}`, ...args)?.c || 0;
+const rows = all<any>(`SELECT r.*, u.title, u.media_json, u.dashboard, u.platforms_json FROM upload_results r JOIN uploads u ON u.id = r.upload_id WHERE ${where.join(' AND ')} ORDER BY r.upload_timestamp DESC LIMIT ? OFFSET ?`, ...args, limit, (page - 1) * limit);
+const profiles = listProfiles(owner); const pages = Math.max(1, Math.ceil(total / limit));
+const qs = (p: number) => `?page=${p}${platform ? `&platform=${platform}` : ''}${profile ? `&profile=${profile}` : ''}`;
+const fmtSize = (n: number) => n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n > 1024 ? `${Math.round(n / 1024)} KB` : `${n} B`;
+---
+<AppLayout title={h.title} subtitle={h.subtitle} active="history" wide>
+  <form class="card p-3 mb-4 flex flex-wrap items-center gap-2 text-sm" method="get">
+    <select name="platform" class="input input-select !w-auto !py-2" onchange="this.form.submit()"><option value="">{h.filterPlatform}: {a.common.all}</option>{PLATFORMS.map((p) => <option value={p.key} selected={platform === p.key}>{p.name}</option>)}</select>
+    <select name="profile" class="input input-select !w-auto !py-2" onchange="this.form.submit()"><option value="">{h.filterProfile}: {a.common.all}</option>{profiles.map((p) => <option value={p.username} selected={profile === p.username}>{p.username}</option>)}</select>
+    <span class="ml-auto text-xs text-slate-500">{total} {h.total}</span>
+  </form>
+  <div class="card overflow-hidden">
+    {rows.length === 0 ? <p class="p-8 text-center text-sm text-slate-500">{h.empty}</p> : (
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 dark:bg-slate-900/60 text-left text-[11px] uppercase tracking-wider text-slate-400"><tr><th class="px-4 py-2.5">{a.common.date}</th><th class="px-2 py-2.5">{a.common.platform}</th><th class="px-2 py-2.5">{a.common.title}</th><th class="px-2 py-2.5">{a.common.profile}</th><th class="px-2 py-2.5">{a.common.status}</th><th class="px-2 py-2.5">{h.source}</th><th class="px-4 py-2.5 text-right">{a.common.actions}</th></tr></thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {rows.map((r) => { const media = parse(r.media_json, []) as any[]; return (
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40">
+              <td class="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{fmtDate(r.upload_timestamp, lang, { dateStyle: 'short', timeStyle: 'short' })}</td>
+              <td class="px-2 py-2.5"><PlatformIcon platform={r.platform as PlatformKey} /></td>
+              <td class="px-2 py-2.5 max-w-xs"><div class="truncate text-slate-900 dark:text-white">{r.title || <i class="text-slate-400">{r.media_type}</i>}</div>{!r.success && <div class="text-[11px] text-rose-500 truncate" title={r.message}>{r.message}</div>}{r.success && r.message && r.message !== 'Published' && <div class="text-[11px] text-slate-400 truncate">{r.message}</div>}</td>
+              <td class="px-2 py-2.5 text-xs text-slate-500">{r.profile_username}</td>
+              <td class="px-2 py-2.5"><span class={r.success ? 'badge-ok' : 'badge-err'}>{r.success ? a.common.success : a.common.failed}</span></td>
+              <td class="px-2 py-2.5 text-xs text-slate-500">{r.dashboard ? h.dashboard : h.api}{media[0] ? ` · ${fmtSize(r.media_size_bytes || 0)}` : ''}{r.video_was_transcoded ? ` · ${h.transcoded}` : ''}</td>
+              <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                {r.post_url && <a href={r.post_url} target="_blank" class="btn-ghost btn-sm !px-2" title={a.common.view}><i class="fa-solid fa-arrow-up-right-from-square"></i></a>}
+                {!r.success && <button type="button" class="btn-ghost btn-sm !px-2 text-brand-600" data-retry={r.upload_id} title={h.retry}><i class="fa-solid fa-rotate-right"></i></button>}
+                {r.success && ['facebook', 'youtube', 'x', 'linkedin', 'threads'].includes(r.platform) && r.post_url && <button type="button" class="btn-ghost btn-sm !px-2 text-rose-500" data-unpublish={r.platform} data-post={r.platform_post_id} data-profile={r.profile_username} title={h.unpublish}><i class="fa-solid fa-trash"></i></button>}
+                <button type="button" class="btn-ghost btn-sm !px-2" data-details={JSON.stringify({ request_id: r.upload_id, post_id: r.platform_post_id, url: r.post_url, error_code: r.error_code, message: r.message, size: r.media_size_bytes, changes: parse(r.changes_json, []), meta: parse(r.meta_json, {}) })} title={h.details}><i class="fa-solid fa-circle-info"></i></button>
+              </td>
+            </tr>); })}
+        </tbody>
+      </table>)}
+    {pages > 1 && <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 px-4 py-2.5 text-xs text-slate-500"><span>{h.page} {page} {h.of} {pages}</span><div class="flex gap-1">{page > 1 && <a href={qs(page - 1)} class="btn-secondary btn-sm"><i class="fa-solid fa-chevron-left"></i></a>}{page < pages && <a href={qs(page + 1)} class="btn-secondary btn-sm"><i class="fa-solid fa-chevron-right"></i></a>}</div></div>}
+  </div>
+  <pre id="details" class="hidden mt-4 rounded-xl bg-slate-900 text-slate-200 p-4 text-xs font-mono overflow-auto"></pre>
+  <script>
+    const api = (window as any).api, toast = (window as any).toast;
+    document.querySelectorAll<HTMLElement>('[data-retry]').forEach((b) => b.addEventListener('click', async () => { try { const d = await api('/api/uploadposts/posts/retry', { method: 'POST', body: JSON.stringify({ request_id: b.dataset.retry }) }); toast(d.message); setTimeout(() => location.reload(), 2500); } catch (e: any) { toast(e.message, 'err'); } }));
+    document.querySelectorAll<HTMLElement>('[data-unpublish]').forEach((b) => b.addEventListener('click', async () => { if (!confirm('?')) return; try { const d = await api('/api/uploadposts/posts/unpublish', { method: 'POST', body: JSON.stringify({ platform: b.dataset.unpublish, user: b.dataset.profile, post_id: b.dataset.post }) }); toast(d.message); location.reload(); } catch (e: any) { toast(e.message, 'err'); } }));
+    document.querySelectorAll<HTMLElement>('[data-details]').forEach((b) => b.addEventListener('click', () => { const p = document.getElementById('details')!; p.classList.remove('hidden'); p.textContent = JSON.stringify(JSON.parse(b.dataset.details!), null, 2); p.scrollIntoView({ behavior: 'smooth' }); }));
+  </script>
+</AppLayout>

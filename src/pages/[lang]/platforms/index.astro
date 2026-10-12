@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/marketing/PageHero.astro';
+import PlatformIcon from '../../../components/PlatformIcon.astro';
+import Cta from '../../../components/marketing/Cta.astro';
+import { PLATFORMS } from '../../../lib/platforms';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const t = Astro.locals.t; const pp = t.platformsPage; const L = (p: string) => localePath(lang, p);
+const txt = lang === 'fr' ? 'fr' : 'en';
+const title = lang === 'fr' ? 'Plateformes supportées | API Upload-Post' : 'Supported platforms | Upload-Post API';
+---
+<BaseLayout title={title} description={pp.subtitle}>
+  <PageHero title={pp.title} subtitle={pp.subtitle} center cta={{ label: t.common.startFree, href: `/app/login?source=${lang}-platforms` }} cta2={{ label: t.common.apiDocs, href: '/docs/', icon: 'fa-book' }} />
+  <section class="lp-section-gray">
+    <div class="container-x grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {PLATFORMS.map((p, i) => (
+        <a href={L(`/platforms/${p.slug}/`)} class="card card-hover p-5 reveal" style={`transition-delay:${(i % 4) * 50}ms`}>
+          <div class="flex items-center gap-3"><span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800"><PlatformIcon platform={p.key} size="text-xl" /></span><div><h3 class="font-semibold text-slate-900 dark:text-white">{p.name}</h3><div class="text-[11px] text-slate-500">{p.auth === 'oauth' ? 'OAuth' : lang === 'fr' ? 'Clé API' : 'API key'}</div></div></div>
+          <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{pp.apiFor.replace('{name}', p.name)}</p>
+          <div class="mt-3 flex flex-wrap gap-1">{p.supports.video && <span class="chip"><i class="fa-solid fa-video mr-1"></i>{pp.video}</span>}{p.supports.photos && <span class="chip"><i class="fa-solid fa-image mr-1"></i>{pp.photos}</span>}{p.supports.text && <span class="chip"><i class="fa-solid fa-align-left mr-1"></i>{pp.text}</span>}{p.supports.analytics && <span class="chip"><i class="fa-solid fa-chart-line mr-1"></i>{pp.analyticsCap}</span>}</div>
+        </a>))}
+    </div>
+  </section>
+  <Cta title={pp.readyTitle} label={t.common.startFree} secondary={{ label: t.common.apiDocs, href: '/docs/' }} note={t.common.noCreditCard} />
+</BaseLayout>

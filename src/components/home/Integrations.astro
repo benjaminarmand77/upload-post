@@ -1,0 +1,43 @@
+---
+import { localePath } from '../../lib/i18n';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.integrations;
+const L = (p: string) => localePath(lang, p);
+const cards = [
+  { ...s.n8n, href: '/n8n-integration-guide/', logo: 'n8n', highlight: true, badge: s.officialNode, btn: s.viewGuide, boxIcon: 'fa-star' },
+  { ...s.make, href: '/make-integration-guide/', logo: 'make', btn: s.viewGuide, boxIcon: 'fa-bolt' },
+  { ...s.mcp, href: '/mcp/', logo: 'mcp', btn: s.viewGuide, boxIcon: 'fa-bolt' },
+  { ...s.skill, href: '/skills/claude-code/', logo: 'claude', btn: s.exploreSkills, boxIcon: 'fa-bolt', mono: true },
+];
+---
+<section id="integrations" class="lp-section-white">
+  <div class="container-x">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 reveal">
+      <div><h2 class="section-title">{s.title}</h2><p class="mt-4 text-lg text-slate-500 dark:text-slate-400 max-w-2xl">{s.subtitle}</p></div>
+      <a href={L('/docs/')} class="btn-secondary shrink-0"><i class="fa-solid fa-code"></i>{s.docs}</a>
+    </div>
+    <div class="mt-10 grid md:grid-cols-2 gap-6">
+      {cards.map((c, i) => (
+        <article class={`relative card p-7 flex flex-col reveal ${c.highlight ? 'border-brand-400 dark:border-brand-500/60 shadow-glow' : ''}`} style={`transition-delay:${i * 80}ms`}>
+          {c.badge && <span class="absolute -top-3 left-6 badge-brand border border-brand-200 dark:border-brand-500/40">{c.badge}</span>}
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-lg font-black">
+              {c.logo === 'n8n' && <span class="text-[#ea4b71] text-[13px]">n8n</span>}
+              {c.logo === 'make' && <span class="text-[#6d00cc] dark:text-[#b57bff]"><i class="fa-solid fa-m"></i></span>}
+              {c.logo === 'mcp' && <span class="text-brand-500"><i class="fa-solid fa-robot"></i></span>}
+              {c.logo === 'claude' && <span class="text-brand-500"><i class="fa-solid fa-terminal"></i></span>}
+            </span>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">{c.t}</h3>
+          </div>
+          <p class="mt-4 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{c.d}</p>
+          <div class="mt-5 flex items-start gap-3 rounded-xl bg-brand-50 dark:bg-brand-500/10 p-4">
+            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white text-xs"><i class={`fa-solid ${c.boxIcon}`}></i></span>
+            <div><div class="text-sm font-semibold text-slate-900 dark:text-white">{c.boxT}</div><div class={`text-xs text-slate-500 dark:text-slate-400 mt-0.5 ${c.mono ? 'font-mono' : ''}`}>{c.boxD}</div></div>
+          </div>
+          <ul class="mt-5 space-y-2 flex-1">{c.li.map((x) => <li class="check-li">{x}</li>)}</ul>
+          <a href={L(c.href)} class="btn-secondary btn-sm mt-6 self-start"><i class="fa-solid fa-plug text-brand-500"></i>{c.btn}</a>
+        </article>))}
+    </div>
+    <p class="mt-10 text-center text-slate-500 dark:text-slate-400 max-w-3xl mx-auto">{s.outro}</p>
+    <div class="mt-6 text-center"><a href={L('/docs/')} class="btn-primary"><i class="fa-solid fa-code"></i>{s.exploreDocs}</a></div>
+  </div>
+</section>

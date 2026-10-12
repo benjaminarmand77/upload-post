@@ -1,0 +1,22 @@
+---
+import { localePath } from '../../lib/i18n';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.useCases;
+const L = (p: string) => localePath(lang, p);
+const signup = `/app/login?source=${lang}-use-cases`;
+---
+<section id="use-cases" class="lp-section-white">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 grid md:grid-cols-2 gap-5">
+      {s.items.map((u, i) => (
+        <a href={signup} class={`card card-hover p-7 flex flex-col reveal ${i === 0 ? 'md:row-span-2' : ''}`} style={`transition-delay:${i * 70}ms`}>
+          <span class="icon-box"><i class={`fa-solid ${u.icon}`}></i></span>
+          <h3 class={`mt-4 font-bold text-slate-900 dark:text-white ${i === 0 ? 'text-2xl' : 'text-lg'}`}>{u.t}</h3>
+          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed flex-1">{u.d}</p>
+          <span class="mt-6 text-sm font-semibold text-brand-600 dark:text-brand-400">{s.startPosting} <i class="fa-solid fa-arrow-right text-xs"></i></span>
+        </a>))}
+    </div>
+    <div class="mt-10 text-center"><a href={signup} class="btn-primary">{s.cta}</a></div>
+    <p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 max-w-3xl mx-auto">{s.alsoA} <a href={L('/social-media-scheduler/')} class="text-brand-600 dark:text-brand-400 hover:underline">{s.alsoScheduler}</a>. {s.alsoB} <a href={L('/social-media-api/')} class="text-brand-600 dark:text-brand-400 hover:underline">{s.alsoApi}</a> {s.alsoC} <a href={L('/ai-social-media/')} class="text-brand-600 dark:text-brand-400 hover:underline">{s.alsoAi}</a>.</p>
+  </div>
+</section>

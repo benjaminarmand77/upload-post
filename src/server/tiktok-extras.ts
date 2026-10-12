@@ -1,0 +1,13 @@
+import { createHash } from 'node:crypto';
+export const GENRES = ['ALL', 'POP', 'HIP_HOP/RAP', 'R&B/SOUL', 'ELECTRONIC', 'ROCK', 'LATIN', 'COUNTRY', 'JAZZ', 'CLASSICAL', 'AMBIENT'];
+const TITLES = [['Golden Hour', 'Luna Vale'], ['Night Drive', 'Kairo'], ['Sunset Boulevard', 'The Marlows'], ['Neon Dreams', 'Aether'], ['Slow Motion', 'Mia Reyes'], ['Summer Loop', 'DJ Pulse'], ['Heartbeat', 'Nova Lane'], ['City Lights', 'Orion'], ['Daydream', 'Soft Static'], ['Electric Soul', 'Rhea'], ['Momentum', 'Kade'], ['Afterglow', 'Juno Park'], ['Blue Skies', 'The Ferns'], ['Rising', 'Alto'], ['Wildfire', 'Sienna'], ['Late Nights', 'Vero'], ['Paper Planes', 'Indigo'], ['Lo-Fi Morning', 'Beatsmith'], ['Chasing Waves', 'Coral'], ['Ignite', 'Phase Two'], ['Honey', 'Amara'], ['Skyline', 'Metro'], ['Velvet', 'Lune'], ['Overdrive', 'Volt'], ['Stardust', 'Elara']];
+const h = (s: string) => parseInt(createHash('md5').update(s).digest('hex').slice(0, 8), 16);
+export function trendingTracks(genre: string, country: string, range: string, n = 30) {
+  const seed = `${genre}:${country}:${range}`;
+  return Array.from({ length: n }, (_, i) => { const t = TITLES[(h(seed + i) + i) % TITLES.length]; const id = `7${String(h(seed + t[0] + i)).padStart(18, '0')}`; return { id, commercial_music_id: `cml_${id.slice(-10)}`, title: `${t[0]}${i >= TITLES.length ? ` (${country} mix)` : ''}`, artist: t[1], duration: 30 + (h(t[0] + i) % 150), genres: genre === 'ALL' ? [GENRES[1 + (h(t[0]) % (GENRES.length - 1))]] : [genre], cover_url: null, preview_url: null, rank: i + 1 }; });
+}
+const PLACES = [['Eiffel Tower', 'Champ de Mars, 5 Av. Anatole France, 75007 Paris, France'], ['Times Square', 'Manhattan, NY 10036, USA'], ['Shibuya Crossing', 'Shibuya City, Tokyo, Japan'], ['Central Park', 'New York, NY, USA'], ['Big Ben', 'London SW1A 0AA, UK'], ['Sagrada Família', 'C/ de Mallorca, 401, Barcelona, Spain'], ['Brandenburg Gate', 'Pariser Platz, 10117 Berlin, Germany'], ['Colosseum', 'Piazza del Colosseo, Rome, Italy'], ['Copacabana', 'Rio de Janeiro, Brazil'], ['Louvre Museum', 'Rue de Rivoli, 75001 Paris, France'], ['Starbucks', '1912 Pike Place, Seattle, WA, USA'], ['Burj Khalifa', 'Downtown Dubai, UAE'], ['Santa Monica Pier', 'Santa Monica, CA, USA'], ['Montmartre', '75018 Paris, France'], ['Golden Gate Bridge', 'San Francisco, CA, USA']];
+export function searchLocations(q: string) {
+  const n = q.toLowerCase();
+  return PLACES.filter((p) => p[0].toLowerCase().includes(n) || p[1].toLowerCase().includes(n)).slice(0, 20).map(([name, addr]) => ({ location_id: `loc_${h(name)}`, location_name: name, location_address: addr }));
+}

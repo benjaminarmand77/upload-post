@@ -1,0 +1,20 @@
+---
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.howItWorks;
+const signup = `/app/login?source=${lang}-how`;
+---
+<section id="how-it-works" class="lp-section-gray">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-12 relative grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="hidden lg:block absolute top-1/2 left-[12%] right-[12%] h-px border-t-2 border-dashed border-slate-300 dark:border-slate-700 -z-0"></div>
+      {s.steps.map((st, i) => (
+        <div class="relative card p-7 text-center reveal z-10" style={`transition-delay:${i * 90}ms`}>
+          <span class="absolute -top-3 -right-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-xs font-bold shadow">{i + 1}</span>
+          <span class="icon-box"><i class={`fa-solid ${st.icon}`}></i></span>
+          <h3 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">{st.t}</h3>
+          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{st.d}</p>
+        </div>))}
+    </div>
+    <div class="mt-10 text-center"><a href={signup} class="btn-primary">{s.cta}</a></div>
+  </div>
+</section>

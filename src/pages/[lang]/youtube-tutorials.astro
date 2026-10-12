@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Cta from '../../components/marketing/Cta.astro';
+import { TUTORIALS } from '../../lib/showcase';
+import { isLang } from '../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr';
+const more = [{ id: 'dQw4w9WgXcQ', title: fr ? 'Publier sur 22 réseaux avec une seule API (démo complète)' : 'Post to 22 networks with one API (full demo)' }, { id: 'ysz5S6PUM-U', title: fr ? 'Marque blanche : onboarder un client en 3 minutes' : 'Whitelabel: onboard a client in 3 minutes' }, { id: 'jNQXAC9IVRw', title: fr ? 'Claude Code + Upload-Post : publier depuis le terminal' : 'Claude Code + Upload-Post: publish from the terminal' }];
+const all = [...TUTORIALS, ...more];
+const s = fr ? { title: 'Tutoriels YouTube', sub: 'Découvrez comment les experts en automatisation et les créateurs utilisent Upload-Post avec n8n, Make, Claude et l\'API. Nouveaux tutoriels chaque mois.', watch: 'Regarder', submit: 'Vous avez fait un tutoriel ? Écrivez-nous et nous l\'ajouterons.' } : { title: 'YouTube tutorials', sub: 'See how automation experts and creators use Upload-Post with n8n, Make, Claude and the API. New tutorials every month.', watch: 'Watch', submit: 'Made a tutorial? Email us and we will add it.' };
+---
+<BaseLayout title={`${s.title} | Upload-Post`} description={s.sub}>
+  <section class="bg-white dark:bg-slate-950 pt-12 pb-8 text-center"><div class="container-x"><h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white"><i class="fa-brands fa-youtube text-[#ff0000] mr-3"></i>{s.title}</h1><p class="mt-4 max-w-2xl mx-auto text-slate-500 dark:text-slate-400">{s.sub}</p></div></section>
+  <section class="lp-section-gray !pt-4"><div class="container-x grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{all.map((v) => <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener" class="group"><div class="relative aspect-video overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900"><img src={`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`} alt={v.title} loading="lazy" class="h-full w-full object-cover transition group-hover:scale-105" /><span class="absolute inset-0 flex items-center justify-center"><span class="inline-flex h-12 w-16 items-center justify-center rounded-xl bg-[#ff0000] text-white"><i class="fa-solid fa-play"></i></span></span></div><h2 class="mt-3 text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600" dir={(v as any).lang === 'ar' ? 'rtl' : 'auto'}>{v.title}</h2></a>)}</div><p class="mt-10 text-center text-sm text-slate-500">{s.submit} <a href="mailto:info@upload-post.com" class="text-brand-600">info@upload-post.com</a></p></section>
+  <Cta title={Astro.locals.t.home.community.title} label={Astro.locals.t.common.startFree} />
+</BaseLayout>

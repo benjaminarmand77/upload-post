@@ -1,0 +1,63 @@
+---
+/** Whitelabel connect page: clients link their social accounts here (48h single-profile link). */
+import '../styles/global.css';
+import PlatformIcon from '../components/PlatformIcon.astro';
+import { PLATFORMS, PLATFORM_MAP, type PlatformKey } from '../lib/platforms';
+import { validateConnectToken } from '../server/connect';
+import { accountsOf } from '../server/uploads';
+import { all } from '../server/db';
+const token = Astro.url.searchParams.get('token') || '';
+const v = validateConnectToken(token);
+const q = Astro.url.searchParams;
+const L: Record<string, Record<string, string>> = {
+  en: { expired: 'This connection link has expired or is invalid. Ask for a new one.', title: 'Connect Social Media Accounts', desc: 'Connect your social media accounts to manage your posts.', connect: 'Connect', reconnect: 'Reconnect', disconnect: 'Disconnect', connected: 'Connected', back: 'Logout connection', calendar: 'Upcoming posts', none: 'No scheduled posts', creds: 'Paste your credentials', save: 'Save', ok: 'connected successfully', poweredBy: 'Powered by' },
+  fr: { expired: 'Ce lien de connexion a expiré ou est invalide. Demandez-en un nouveau.', title: 'Connecter vos réseaux sociaux', desc: 'Connectez vos comptes pour gérer vos publications.', connect: 'Connecter', reconnect: 'Reconnecter', disconnect: 'Déconnecter', connected: 'Connecté', back: 'Terminer', calendar: 'Publications à venir', none: 'Aucune publication programmée', creds: 'Collez vos identifiants', save: 'Enregistrer', ok: 'connecté avec succès', poweredBy: 'Propulsé par' },
+  es: { expired: 'Este enlace ha caducado o no es válido.', title: 'Conecta tus redes sociales', desc: 'Conecta tus cuentas para gestionar tus publicaciones.', connect: 'Conectar', reconnect: 'Reconectar', disconnect: 'Desconectar', connected: 'Conectado', back: 'Terminar', calendar: 'Próximas publicaciones', none: 'Sin publicaciones programadas', creds: 'Pega tus credenciales', save: 'Guardar', ok: 'conectado correctamente', poweredBy: 'Con tecnología de' },
+  de: { expired: 'Dieser Link ist abgelaufen oder ungültig.', title: 'Social-Media-Konten verbinden', desc: 'Verbinde deine Konten, um deine Beiträge zu verwalten.', connect: 'Verbinden', reconnect: 'Erneut verbinden', disconnect: 'Trennen', connected: 'Verbunden', back: 'Fertig', calendar: 'Geplante Beiträge', none: 'Keine geplanten Beiträge', creds: 'Zugangsdaten einfügen', save: 'Speichern', ok: 'erfolgreich verbunden', poweredBy: 'Bereitgestellt von' },
+  pt: { expired: 'Este link expirou ou é inválido.', title: 'Conectar redes sociais', desc: 'Conecte suas contas para gerenciar suas publicações.', connect: 'Conectar', reconnect: 'Reconectar', disconnect: 'Desconectar', connected: 'Conectado', back: 'Concluir', calendar: 'Próximas publicações', none: 'Nenhuma publicação agendada', creds: 'Cole suas credenciais', save: 'Salvar', ok: 'conectado com sucesso', poweredBy: 'Desenvolvido por' },
+  pl: { expired: 'Ten link wygasł lub jest nieprawidłowy.', title: 'Połącz konta społecznościowe', desc: 'Połącz swoje konta, aby zarządzać publikacjami.', connect: 'Połącz', reconnect: 'Połącz ponownie', disconnect: 'Rozłącz', connected: 'Połączono', back: 'Zakończ', calendar: 'Nadchodzące posty', none: 'Brak zaplanowanych postów', creds: 'Wklej dane logowania', save: 'Zapisz', ok: 'połączono pomyślnie', poweredBy: 'Obsługiwane przez' },
+  tr: { expired: 'Bu bağlantı süresi dolmuş veya geçersiz.', title: 'Sosyal medya hesaplarını bağla', desc: 'Gönderilerinizi yönetmek için hesaplarınızı bağlayın.', connect: 'Bağlan', reconnect: 'Yeniden bağlan', disconnect: 'Bağlantıyı kes', connected: 'Bağlı', back: 'Bitir', calendar: 'Yaklaşan gönderiler', none: 'Planlanmış gönderi yok', creds: 'Kimlik bilgilerini yapıştır', save: 'Kaydet', ok: 'başarıyla bağlandı', poweredBy: 'Altyapı' },
+};
+const cfg = v?.config || {};
+const langPick = cfg.language && L[cfg.language] ? cfg.language : (Astro.locals.lang in L ? Astro.locals.lang : 'en');
+const s = { ...L[langPick], ...(cfg.ui_labels || {}) };
+const platforms = (cfg.platforms?.length ? cfg.platforms : ['tiktok', 'instagram', 'linkedin', 'youtube', 'facebook', 'x', 'threads', 'discord', 'telegram']).filter((k: string) => k in PLATFORM_MAP) as PlatformKey[];
+const accounts = v ? accountsOf(v.profile.id) : []; const accMap = Object.fromEntries(accounts.map((x) => [x.platform, x]));
+const upcoming = v && cfg.show_calendar !== false ? all<any>("SELECT j.scheduled_date, u.title, u.platforms_json FROM scheduled_jobs j JOIN uploads u ON u.id = j.upload_id WHERE j.profile_id = ? AND j.status = 'pending' ORDER BY j.scheduled_date LIMIT 10", v.profile.id) : [];
+const connected = q.get('connected'); const credPlatform = q.get('credentials') as PlatformKey | null;
+const credDefs = Object.fromEntries(PLATFORMS.filter((x) => x.auth === 'credentials').map((x) => [x.key, x.credentialFields!.map((f) => ({ key: f.key, label: f.label[langPick === 'fr' ? 'fr' : 'en'], type: f.type || 'text', placeholder: f.placeholder || '' }))]));
+---
+<!doctype html>
+<html lang={langPick} class="dark">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>{cfg.connect_title || s.title}</title><meta name="robots" content="noindex" /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" /></head>
+<body class="min-h-screen bg-slate-950 text-slate-200 flex items-start justify-center px-4 py-10">
+  <div class="w-full max-w-2xl">
+    {!v ? <div class="card !bg-slate-900 !border-slate-800 p-8 text-center"><i class="fa-solid fa-link-slash text-3xl text-rose-400"></i><p class="mt-4">{s.expired}</p></div> : (
+      <div>
+        <div class="text-center mb-8">{cfg.logo_image ? <img src={cfg.logo_image} alt="" class="mx-auto h-14 object-contain" /> : <span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white text-2xl"><i class="fa-solid fa-cloud-arrow-up"></i></span>}<h1 class="mt-4 text-2xl font-bold text-white">{cfg.connect_title || s.title}</h1><p class="mt-2 text-slate-400">{cfg.connect_description || s.desc}</p></div>
+        {connected && <div class="mb-5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"><i class="fa-solid fa-circle-check mr-2"></i>{PLATFORM_MAP[connected as PlatformKey]?.name} {s.ok}</div>}
+        <div class="grid sm:grid-cols-2 gap-3">
+          {platforms.map((k) => { const p = PLATFORM_MAP[k]; const acc = accMap[k]; return (
+            <div class={`rounded-2xl border p-4 bg-slate-900 ${acc ? 'border-emerald-500/40' : 'border-slate-800'}`}>
+              <div class="flex items-center gap-3"><span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800"><PlatformIcon platform={k} size="text-lg" /></span><div class="min-w-0 flex-1"><div class="font-semibold text-white">{p.name}</div><div class="text-xs text-slate-400 truncate">{acc ? `@${acc.account_name} · ${s.connected}` : ''}</div></div></div>
+              <div class="mt-3 flex gap-2">
+                {p.auth === 'oauth' ? <a href={`/app/connect/${k}?token=${encodeURIComponent(token)}`} class={`${acc ? 'btn-secondary !bg-slate-800 !border-slate-700 !text-slate-200' : 'btn-primary'} btn-sm flex-1`}>{acc ? s.reconnect : s.connect}</a> : <button type="button" data-cred={k} class={`${acc ? 'btn-secondary !bg-slate-800 !border-slate-700 !text-slate-200' : 'btn-primary'} btn-sm flex-1`}>{acc ? s.reconnect : s.connect}</button>}
+                {acc && <form method="post" action="/app/connect/disconnect"><input type="hidden" name="token" value={token} /><input type="hidden" name="platform" value={k} /><button class="btn-ghost btn-sm !text-rose-400" title={s.disconnect}><i class="fa-solid fa-plug-circle-xmark"></i></button></form>}
+              </div>
+            </div>); })}
+        </div>
+        {cfg.show_calendar !== false && <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4"><div class="font-semibold text-white mb-2"><i class="fa-regular fa-calendar mr-2 text-brand-400"></i>{s.calendar}</div>{upcoming.length ? <ul class="text-sm space-y-1.5">{upcoming.map((u) => <li class="flex items-center gap-2"><span class="text-xs text-slate-400 w-36">{new Date(u.scheduled_date).toLocaleString(langPick)}</span><span class="flex gap-1">{JSON.parse(u.platforms_json).map((k: PlatformKey) => <PlatformIcon platform={k} size="text-xs" />)}</span><span class="truncate">{u.title}</span></li>)}</ul> : <p class="text-sm text-slate-500">{s.none}</p>}</div>}
+        {cfg.redirect_url && <div class="mt-6 text-center"><a href={cfg.redirect_url} class="btn-primary">{cfg.redirect_button_text || s.back}</a></div>}
+        <p class="mt-8 text-center text-[11px] text-slate-600">{s.poweredBy} Upload-Post</p>
+      </div>)}
+  </div>
+  <div id="cred-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4"><div class="absolute inset-0 bg-slate-950/70" data-close></div><form id="cred-form" class="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6"><input type="hidden" name="token" value={token} /><input type="hidden" name="platform" /><h3 class="font-bold text-white" id="cred-title"></h3><p class="text-sm text-slate-400 mt-1">{s.creds}</p><div id="cred-fields" class="mt-4 space-y-3"></div><div class="mt-5 flex justify-end gap-2"><button type="button" class="btn-secondary btn-sm !bg-slate-800 !border-slate-700 !text-slate-200" data-close>✕</button><button class="btn-primary btn-sm">{s.save}</button></div></form></div>
+  <script define:vars={{ credDefs, names: Object.fromEntries(PLATFORMS.map((p) => [p.key, p.name])), token, credPlatform }}>
+    const modal = document.getElementById('cred-modal'), form = document.getElementById('cred-form');
+    const open = (k) => { form.platform.value = k; document.getElementById('cred-title').textContent = names[k]; document.getElementById('cred-fields').innerHTML = credDefs[k].map((f) => `<div><label class="block text-xs font-medium text-slate-300 mb-1">${f.label}</label><input class="input !bg-slate-800 !border-slate-700 !text-white" name="${f.key}" type="${f.type}" placeholder="${f.placeholder}" ${f.key === 'relays' ? '' : 'required'} /></div>`).join(''); modal.classList.remove('hidden'); };
+    document.querySelectorAll('[data-cred]').forEach((b) => b.addEventListener('click', () => open(b.dataset.cred)));
+    modal.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => modal.classList.add('hidden')));
+    if (credPlatform && credDefs[credPlatform]) open(credPlatform);
+    form.addEventListener('submit', async (e) => { e.preventDefault(); const r = await fetch('/app/connect/credentials', { method: 'POST', body: new FormData(form) }); const d = await r.json(); if (d.success) location.href = `/connect?token=${encodeURIComponent(token)}&connected=${d.account.platform}`; else alert(d.message || 'Error'); });
+  </script>
+</body></html>

@@ -1,0 +1,34 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getAppDict } from '../../i18n/app';
+import { getNotifications, listDeliveries, ALL_EVENTS } from '../../server/webhooks';
+import { fmtDate } from '../../lib/i18n';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const n = a.notifications;
+const owner = user.owner_user_id || user.id; const s = getNotifications(owner); const deliveries = listDeliveries(owner, 20);
+const sample = { event: 'upload_completed', user_email: user.email, profile_username: 'default', platform: 'tiktok', media_type: 'video', title: 'My video', caption: null, request_id: 'req_…', job_id: null, result: { success: true, url: 'https://www.tiktok.com/@you/video/7…', publish_id: 'v_pub_…', post_id: '7…' }, created_at: new Date().toISOString() };
+---
+<AppLayout title={n.title} subtitle={n.subtitle} active="notifications" wide>
+  <div class="grid lg:grid-cols-[1fr_1fr] gap-6">
+    <form id="nf" class="card p-5 space-y-4">
+      <div class="flex items-center justify-between"><h3 class="font-semibold text-slate-900 dark:text-white"><i class="fa-solid fa-bolt text-brand-500 mr-2"></i>{n.webhook}</h3><button type="button" class="switch" role="switch" aria-checked={String(s.channels.webhook)} data-ch="webhook"><span></span></button></div>
+      <div><label class="label">{n.url}</label><input name="webhook_url" type="url" class="input" value={s.webhook_url || ''} placeholder="https://example.com/webhooks/upload-post" /></div>
+      <div><label class="label">{n.events}</label><div class="grid sm:grid-cols-2 gap-1.5">{ALL_EVENTS.map((e) => <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="webhook_events" value={e} checked={s.webhook_events.includes(e)} class="rounded" /><code class="text-xs">{e}</code></label>)}</div></div>
+      <div><label class="label">{n.secret}</label><div class="flex gap-2"><code id="secret" class="input font-mono text-xs flex-1">{s.webhook_secret || '—'}</code><button type="button" class="btn-secondary btn-sm" data-copy="#secret">{a.common.copy}</button></div><p class="help">{n.secretHelp}</p></div>
+      <div class="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between"><h3 class="font-semibold text-slate-900 dark:text-white"><i class="fa-brands fa-telegram text-[#26A5E4] mr-2"></i>{n.telegram}</h3><button type="button" class="switch" role="switch" aria-checked={String(s.channels.telegram)} data-ch="telegram"><span></span></button></div>
+      <div><label class="label">{n.chatId}</label><input name="telegram_chat_id" class="input" value={s.telegram_chat_id || ''} placeholder="123456789" /></div>
+      <div class="flex gap-2"><button class="btn-primary">{a.common.save}</button><button type="button" id="test" class="btn-secondary">{n.testWebhook}</button></div>
+    </form>
+    <div class="space-y-6">
+      <div class="card p-5"><h3 class="font-semibold text-slate-900 dark:text-white">{n.payload}</h3><pre class="mt-3 rounded-lg bg-slate-900 text-slate-200 p-3 text-[11px] font-mono overflow-auto">{JSON.stringify(sample, null, 2)}</pre></div>
+      <div class="card p-5"><h3 class="font-semibold text-slate-900 dark:text-white">{n.deliveries}</h3><ul class="mt-3 divide-y divide-slate-100 dark:divide-slate-800 text-xs">{deliveries.length === 0 ? <li class="py-3 text-slate-400">—</li> : deliveries.map((d: any) => <li class="py-2 flex items-center gap-2"><span class={d.status === 'delivered' ? 'badge-ok' : 'badge-err'}>{d.response_code || d.status}</span><code>{d.event}</code><span class="truncate text-slate-400 flex-1">{d.url}</span><span class="text-slate-400">{fmtDate(d.created_at, lang, { dateStyle: 'short', timeStyle: 'short' })}</span></li>)}</ul></div>
+    </div>
+  </div>
+  <script>
+    const api = (window as any).api, toast = (window as any).toast; const form = document.getElementById('nf') as HTMLFormElement;
+    form.querySelectorAll<HTMLElement>('[data-ch]').forEach((b) => b.addEventListener('click', () => b.setAttribute('aria-checked', String(b.getAttribute('aria-checked') !== 'true'))));
+    const payload = () => ({ channels: { webhook: form.querySelector('[data-ch=webhook]')!.getAttribute('aria-checked') === 'true', telegram: form.querySelector('[data-ch=telegram]')!.getAttribute('aria-checked') === 'true' }, webhook_url: (form.elements.namedItem('webhook_url') as HTMLInputElement).value || null, telegram_chat_id: (form.elements.namedItem('telegram_chat_id') as HTMLInputElement).value || null, webhook_events: [...form.querySelectorAll<HTMLInputElement>('input[name=webhook_events]:checked')].map((i) => i.value) });
+    form.addEventListener('submit', async (e) => { e.preventDefault(); try { await api('/api/uploadposts/users/notifications', { method: 'POST', body: JSON.stringify(payload()) }); toast('✓'); location.reload(); } catch (err: any) { toast(err.message, 'err'); } });
+    document.getElementById('test')!.addEventListener('click', async () => { try { await api('/api/uploadposts/users/notifications', { method: 'POST', body: JSON.stringify(payload()) }); const d = await api('/api/uploadposts/users/notifications/test', { method: 'POST' }); toast(d.message); setTimeout(() => location.reload(), 800); } catch (err: any) { toast(err.message, 'err'); } });
+  </script>
+</AppLayout>

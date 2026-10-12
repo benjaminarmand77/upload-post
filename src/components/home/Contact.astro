@@ -1,0 +1,14 @@
+---
+const t = Astro.locals.t; const s = t.home.contact;
+---
+<section id="get-in-touch" class="lp-section-gray">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 max-w-2xl mx-auto card p-10 text-center reveal">
+      <span class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600 text-white text-2xl shadow-lg shadow-brand-600/30"><i class="fa-solid fa-comments"></i></span>
+      <h3 class="mt-6 text-xl font-bold text-slate-900 dark:text-white">{s.cardTitle}</h3>
+      <p class="mt-2 text-slate-500 dark:text-slate-400">{s.cardBody}</p>
+      <a href="mailto:info@upload-post.com" class="btn-secondary mt-6 !text-base !text-brand-600 dark:!text-brand-400"><i class="fa-solid fa-envelope"></i>info@upload-post.com</a>
+    </div>
+  </div>
+</section>

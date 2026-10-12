@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Hero from '../../components/home/Hero.astro';
+import OldWay from '../../components/home/OldWay.astro';
+import NewWay from '../../components/home/NewWay.astro';
+import Testimonials from '../../components/home/Testimonials.astro';
+import Community from '../../components/home/Community.astro';
+import Growth from '../../components/home/Growth.astro';
+import Views from '../../components/home/Views.astro';
+import Safety from '../../components/home/Safety.astro';
+import Features from '../../components/home/Features.astro';
+import HowItWorks from '../../components/home/HowItWorks.astro';
+import Integrations from '../../components/home/Integrations.astro';
+import Share from '../../components/home/Share.astro';
+import UseCases from '../../components/home/UseCases.astro';
+import Pricing from '../../components/home/Pricing.astro';
+import Success from '../../components/home/Success.astro';
+import Faq from '../../components/home/Faq.astro';
+import PlatformsGrid from '../../components/home/PlatformsGrid.astro';
+import Contact from '../../components/home/Contact.astro';
+import { isLang } from '../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const t = Astro.locals.t;
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'Organization', name: 'Upload-Post', url: Astro.site?.toString(), logo: new URL('/favicon.svg', Astro.site).toString(), sameAs: ['https://github.com/upload-post', 'https://www.linkedin.com/company/upload-post'] },
+  { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Upload-Post', applicationCategory: 'BusinessApplication', operatingSystem: 'Web', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.9', reviewCount: '312' } },
+];
+---
+<BaseLayout title={t.meta.title} description={t.meta.description} jsonLd={jsonLd}>
+  <Hero />
+  <OldWay />
+  <NewWay />
+  <Testimonials />
+  <Community />
+  <Growth />
+  <Views />
+  <Safety />
+  <Features />
+  <HowItWorks />
+  <Integrations />
+  <Share />
+  <UseCases />
+  <Pricing />
+  <Success />
+  <Faq />
+  <PlatformsGrid />
+  <Contact />
+</BaseLayout>

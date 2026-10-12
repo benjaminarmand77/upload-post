@@ -1,0 +1,22 @@
+---
+import { localePath } from '../../lib/i18n';
+interface Props { eyebrow?: string; title: string; titleB?: string; subtitle?: string; breadcrumb?: { label: string; href?: string }[]; cta?: { label: string; href: string; icon?: string }; cta2?: { label: string; href: string; icon?: string }; dark?: boolean; center?: boolean; note?: string }
+const { eyebrow, title, titleB, subtitle, breadcrumb, cta, cta2, dark = false, center = false, note } = Astro.props;
+const lang = Astro.locals.lang; const L = (p: string) => localePath(lang, p);
+---
+<section class={`relative overflow-hidden ${dark ? 'bg-slate-950 text-white' : 'bg-white dark:bg-slate-950'} pt-10 pb-14 md:pt-14 md:pb-20`}>
+  <div class="glow -top-32 -left-24 h-[420px] w-[420px] bg-brand-500/15"></div>
+  <div class="bg-grid absolute inset-0 opacity-70"></div>
+  <div class={`container-x relative grid ${Astro.slots.has('aside') ? 'lg:grid-cols-[1.05fr_1fr] gap-10 items-center' : ''}`}>
+    <div class={center && !Astro.slots.has('aside') ? 'text-center max-w-3xl mx-auto' : 'max-w-2xl'}>
+      {breadcrumb && <nav class="mb-4 text-xs text-slate-500 flex flex-wrap gap-1.5" aria-label="Breadcrumb">{breadcrumb.map((b, i) => <span>{i > 0 && <span class="mx-1">/</span>}{b.href ? <a href={L(b.href)} class="hover:text-brand-500">{b.label}</a> : <span class="text-slate-700 dark:text-slate-300">{b.label}</span>}</span>)}</nav>}
+      {eyebrow && <span class="eyebrow mb-4">{eyebrow}</span>}
+      <h1 class={`text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] ${dark ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{title}{titleB && <><br /><span class="gradient-text">{titleB}</span></>}</h1>
+      {subtitle && <p class={`mt-5 text-lg leading-relaxed ${dark ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>{subtitle}</p>}
+      {(cta || cta2) && <div class={`mt-7 flex flex-wrap gap-3 ${center && !Astro.slots.has('aside') ? 'justify-center' : ''}`}>{cta && <a href={cta.href.startsWith('/app') || cta.href.startsWith('http') ? cta.href : L(cta.href)} class="btn-primary btn-lg">{cta.icon && <i class={`fa-solid ${cta.icon}`}></i>}{cta.label}</a>}{cta2 && <a href={cta2.href.startsWith('/app') || cta2.href.startsWith('http') ? cta2.href : L(cta2.href)} class="btn-secondary btn-lg">{cta2.icon && <i class={`fa-solid ${cta2.icon}`}></i>}{cta2.label}</a>}</div>}
+      {note && <p class="mt-3 text-xs text-slate-500">{note}</p>}
+      <slot name="extra" />
+    </div>
+    {Astro.slots.has('aside') && <div><slot name="aside" /></div>}
+  </div>
+</section>

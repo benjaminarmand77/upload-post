@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/marketing/PageHero.astro';
+import CodeBlock from '../../components/marketing/CodeBlock.astro';
+import FeatureGrid from '../../components/marketing/FeatureGrid.astro';
+import Cta from '../../components/marketing/Cta.astro';
+import FaqList from '../../components/marketing/FaqList.astro';
+import { integrationBySlug } from '../../lib/content/integrations';
+import { isLang, localePath } from '../../lib/i18n';
+interface Props { slug: string }
+const g = integrationBySlug(Astro.props.slug)!;
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+---
+<BaseLayout title={`${g.title[txt]} — ${g.sub[txt]} | Upload-Post`} description={g.intro[txt]}>
+  <PageHero eyebrow={fr ? 'Guide d\'intégration' : 'Integration guide'} title={g.title[txt]} titleB={g.sub[txt]} subtitle={g.intro[txt]} cta={{ label: Astro.locals.t.common.startFree, href: `/app/login?source=${lang}-${g.slug}` }} cta2={g.templatesLink ? { label: fr ? 'Voir les modèles' : 'See templates', href: g.templatesLink, icon: 'fa-shapes' } : { label: Astro.locals.t.common.apiDocs, href: '/docs/', icon: 'fa-book' }}>
+    <div slot="aside" class="space-y-3"><span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-2xl" style={`color:${g.color}`}><i class={g.icon}></i></span><CodeBlock title={g.codeTitle} code={g.code} /></div>
+  </PageHero>
+  <section class="lp-section-gray"><div class="container-x max-w-4xl"><h2 class="section-title text-center mb-8 reveal">{fr ? 'Configuration pas à pas' : 'Step-by-step setup'}</h2><ol class="space-y-4">{g.steps[txt].map(([n, t], i) => <li class="card p-6 flex gap-4 reveal"><span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white font-bold">{i + 1}</span><div><h3 class="font-semibold text-slate-900 dark:text-white text-lg">{n}</h3><p class="mt-1 text-slate-500 dark:text-slate-400">{t}</p></div></li>)}</ol></div></section>
+  <FeatureGrid items={g.features[txt]} cols={4} />
+  <FaqList title="FAQ" items={g.faq[txt]} gray />
+  <Cta title={g.sub[txt]} label={Astro.locals.t.common.startFree} href={`/app/login?source=${lang}-${g.slug}`} note={Astro.locals.t.common.noCreditCard} />
+</BaseLayout>

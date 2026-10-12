@@ -1,0 +1,23 @@
+---
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.newWay;
+const signup = `/app/login?source=${lang}-new-way`;
+---
+<section class="lp-section-white">
+  <div class="container-x grid lg:grid-cols-[0.95fr_1.05fr] gap-12 items-center">
+    <div class="reveal">
+      <span class="eyebrow"><i class="fa-solid fa-bolt"></i>{s.eyebrow}</span>
+      <h2 class="section-title mt-4">{s.title}</h2>
+      <p class="mt-5 text-lg text-slate-500 dark:text-slate-400 leading-relaxed">{s.body}</p>
+      <div class="my-8 border-t border-slate-200 dark:border-slate-800"></div>
+      <a href={signup} class="btn-primary">{s.cta}<i class="fa-solid fa-arrow-right text-xs"></i></a>
+      <p class="mt-5 text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed">{s.note}</p>
+    </div>
+    <div class="space-y-4">
+      {s.steps.map((st, i) => (
+        <div class="card flex items-start gap-4 p-5 reveal" style={`transition-delay:${i * 90}ms`}>
+          <span class="icon-box shrink-0"><i class={`fa-solid ${st.icon}`}></i></span>
+          <div><h3 class="font-semibold text-slate-900 dark:text-white">{st.t}</h3><p class="mt-1 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{st.d}</p></div>
+        </div>))}
+    </div>
+  </div>
+</section>

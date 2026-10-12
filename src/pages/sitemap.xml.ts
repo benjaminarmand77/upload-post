@@ -1,0 +1,20 @@
+import type { APIRoute } from 'astro';
+import { LANGS, localePath } from '../lib/i18n';
+import { PLATFORMS } from '../lib/platforms';
+import { TOOLS, toolSlug } from '../lib/content/tools';
+import { GUIDES } from '../lib/content/howto';
+import { INTEGRATIONS } from '../lib/content/integrations';
+import { N8N_TEMPLATES, PLATFORM_UPLOAD_GUIDES, uploadGuideSlug } from '../lib/content/templates';
+import { COMPETITORS } from '../lib/content/competitors';
+import { LEGAL } from '../lib/content/legal';
+import { AGENTS } from '../lib/content/mcp';
+import { CUSTOMERS } from '../lib/showcase';
+export const GET: APIRoute = ({ url }) => {
+  const base = (process.env.SITE_URL || url.origin).replace(/\/$/, '');
+  const paths = ['/', '/platforms/', ...PLATFORMS.map((p) => `/platforms/${p.slug}/`), '/tools/', '/mcp/', ...PLATFORMS.map((p) => `/mcp/${p.slug}/`), '/skills/claude-code/', ...PLATFORMS.map((p) => `/skills/claude-code/${p.slug}/`), '/whitelabel/', '/affiliates/', '/status/', '/leaderboard/', '/ai-agents/', ...AGENTS.map((a) => `/${a.slug}-social-media/`), '/how-to/', ...GUIDES.map((g) => `/how-to/${g.slug}/`), ...INTEGRATIONS.map((i) => `/${i.slug}/`), '/n8n-templates/', '/make-templates/', ...N8N_TEMPLATES.map((t) => `/n8n/${t.slug}/`), ...PLATFORM_UPLOAD_GUIDES.map((k) => `/n8n/${uploadGuideSlug(k)}/`), '/youtube-tutorials/', '/customers/', ...CUSTOMERS.map((c) => `/customers/${c.slug}/`), '/reviews/', ...COMPETITORS.map((c) => `/${c.slug}-alternative/`), '/social-media-api/', '/social-media-scheduler/', '/ai-social-media/', '/best-social-media-apis/', '/pricing-comparison/', '/chatgpt-ads/', '/openclaw-integration/', '/openstory-integration/', ...LEGAL.map((l) => `/${l.slug}/`)];
+  const langs = LANGS.map((l) => l.code);
+  const urls = paths.flatMap((p) => langs.map((lang) => `<url><loc>${base}${localePath(lang, p)}</loc>${langs.map((l2) => `<xhtml:link rel="alternate" hreflang="${l2 === 'br' ? 'pt-BR' : l2}" href="${base}${localePath(l2, p)}"/>`).join('')}<changefreq>weekly</changefreq><priority>${p === '/' ? '1.0' : '0.7'}</priority></url>`));
+  const docs = ['/docs/', '/docs/quickstart', '/docs/sdk-examples', '/docs/api/reference', '/docs/guides/authentication', '/docs/guides/scheduling', '/docs/guides/async-uploads', '/docs/guides/whitelabel', '/docs/guides/webhooks', '/docs/guides/errors', '/docs/guides/mcp', '/docs/guides/self-hosting'].map((d) => `<url><loc>${base}${d}</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>`);
+  const tools = TOOLS.flatMap((t) => langs.map((lang) => `<url><loc>${base}${localePath(lang, `/tools/${toolSlug(t, lang)}/`)}</loc></url>`));
+  return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${[...urls, ...tools, ...docs].join('\n')}\n</urlset>`, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } });
+};

@@ -1,0 +1,22 @@
+---
+const t = Astro.locals.t; const s = t.home.faq;
+const jsonLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: s.items.map((i) => ({ '@type': 'Question', name: i.q, acceptedAnswer: { '@type': 'Answer', text: i.a } })) };
+---
+<section id="faq" class="lp-section-gray">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 max-w-3xl mx-auto card divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden reveal">
+      {s.items.map((f, i) => (
+        <details class="group" open={i === 0}>
+          <summary class="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <span class="icon-box !h-8 !w-8 text-xs shrink-0"><i class={`fa-solid ${f.icon}`}></i></span>
+            <span class="flex-1 font-semibold text-slate-900 dark:text-white text-[15px]">{f.q}</span>
+            <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition group-open:rotate-180"></i>
+          </summary>
+          <p class="px-6 pb-5 pl-[4.5rem] text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{f.a}</p>
+        </details>))}
+    </div>
+    <div class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">{s.more} <a href="mailto:info@upload-post.com" class="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{s.contact}</a></div>
+  </div>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</section>

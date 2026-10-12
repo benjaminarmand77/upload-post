@@ -1,0 +1,46 @@
+---
+import { REVIEWS } from '../../lib/showcase';
+import { localePath, fmtDate } from '../../lib/i18n';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.testimonials;
+const L = (p: string) => localePath(lang, p);
+const cols = [[], [], []] as typeof REVIEWS[];
+REVIEWS.forEach((r, i) => cols[i % 3].push(r));
+const colors = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+---
+<section id="testimonials" class="lp-section-gray">
+  <div class="container-x">
+    <div class="text-center reveal">
+      <h2 class="section-title">{s.title}</h2>
+      <p class="section-subtitle">{s.subtitle}</p>
+      <div class="mt-6 inline-flex items-center gap-2 text-sm">
+        <span class="text-amber-400">{[0,1,2,3,4].map(() => <i class="fa-solid fa-star"></i>)}</span>
+        <strong class="text-slate-900 dark:text-white">{s.rating}</strong>
+        <span class="text-slate-400">·</span>
+        <a href={L('/reviews/')} class="text-slate-600 dark:text-slate-300 hover:text-brand-500">{s.seeAll} →</a>
+      </div>
+    </div>
+    <div class="mt-10 grid md:grid-cols-3 gap-5">
+      {cols.map((col) => (
+        <div class="space-y-5">
+          {col.map((r, i) => (
+            <article class="card p-5 reveal" style={`transition-delay:${i * 60}ms`}>
+              <div class="text-amber-400 text-xs">{Array.from({ length: r.stars }).map(() => <i class="fa-solid fa-star"></i>)}</div>
+              {r.video
+                ? <div class="mt-3 aspect-video rounded-lg bg-slate-950 flex items-center justify-center text-slate-500 border border-slate-800"><div class="text-center"><i class="fa-solid fa-circle-play text-4xl text-brand-400"></i><div class="mt-2 text-[11px] font-mono">0:00 / 1:08</div></div></div>
+                : <p class="mt-3 text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{r.text}</p>}
+              <div class="mt-4 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={`background:${colors[(r.name.length + i) % colors.length]}`}>{r.initials}</span>
+                  <div class="min-w-0"><div class="text-sm font-semibold text-slate-900 dark:text-white truncate">{r.name}</div>{r.role && <div class="text-[11px] text-slate-500 truncate">{r.role}</div>}</div>
+                </div>
+                <time class="text-[11px] text-slate-400 whitespace-nowrap" datetime={r.date}>{fmtDate(r.date + '-01', lang, { month: 'short', year: 'numeric' })}</time>
+              </div>
+            </article>))}
+        </div>))}
+    </div>
+    <div class="mt-10 flex flex-wrap justify-center gap-3">
+      <a href={L('/reviews/')} class="btn-secondary">{s.seeAll}</a>
+      <a href={L('/reviews/#leave')} class="btn-ghost text-brand-600 dark:text-brand-400"><i class="fa-solid fa-pen"></i>{s.leaveReview}</a>
+    </div>
+  </div>
+</section>

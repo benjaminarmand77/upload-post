@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHero from '../../../components/marketing/PageHero.astro';
+import CodeBlock from '../../../components/marketing/CodeBlock.astro';
+import Cta from '../../../components/marketing/Cta.astro';
+import FaqList from '../../../components/marketing/FaqList.astro';
+import PlatformIcon from '../../../components/PlatformIcon.astro';
+import { platformBySlug } from '../../../lib/platforms';
+import { mcpConfig } from '../../../lib/content/mcp';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const p = platformBySlug(Astro.params.slug!); if (!p) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const L = (x: string) => localePath(lang, x); const txt = fr ? 'fr' : 'en';
+const base = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+const tool = p.supports.video ? 'upload_video' : p.supports.photos ? 'upload_photos' : 'upload_text';
+const prompts = fr ? [`Publie ma vidéo ./promo.mp4 sur ${p.name} avec le titre « Nouveautés de la semaine »`, `Programme un post ${p.name} pour vendredi 18h avec le texte de mon brouillon`, `Quels sont mes 5 derniers posts ${p.name} et leurs vues ?`, `Ajoute ce post à ma file de publication ${p.name}`] : [`Post my video ./promo.mp4 to ${p.name} with the title "This week's news"`, `Schedule a ${p.name} post for Friday 6pm with the text of my draft`, `What are my last 5 ${p.name} posts and their views?`, `Add this post to my ${p.name} publishing queue`];
+const s = fr ? { title: `MCP ${p.name}`, titleB: `Publiez sur ${p.name} depuis ChatGPT, Claude et vos agents IA`, sub: `Branchez le serveur MCP Upload-Post et demandez à votre assistant de publier, programmer et analyser vos contenus ${p.name} en langage naturel. ${p.page.intro[txt]}`, prompts: 'Exemples de prompts', tools: `Outils MCP utiles pour ${p.name}`, setup: 'Configuration', faq: [{ q: `Quel outil MCP publie sur ${p.name} ?`, a: `${tool} avec platforms: ["${p.key}"]. L'assistant choisit l'outil tout seul en fonction de votre demande.` }, { q: `L'IA peut-elle voir mes statistiques ${p.name} ?`, a: p.supports.analytics ? `Oui, via get_analytics et get_post_analytics.` : `${p.name} ne fournit pas d'analytique via l'API ; l'historique des publications reste disponible avec get_upload_history.` }] }
+: { title: `${p.name} MCP`, titleB: `Post to ${p.name} from ChatGPT, Claude and your AI agents`, sub: `Plug in the Upload-Post MCP server and ask your assistant to publish, schedule and analyze your ${p.name} content in plain language. ${p.page.intro[txt]}`, prompts: 'Example prompts', tools: `Useful MCP tools for ${p.name}`, setup: 'Setup', faq: [{ q: `Which MCP tool posts to ${p.name}?`, a: `${tool} with platforms: ["${p.key}"]. The assistant picks the tool by itself based on your request.` }, { q: `Can the AI see my ${p.name} stats?`, a: p.supports.analytics ? `Yes, through get_analytics and get_post_analytics.` : `${p.name} does not provide analytics through its API; the posting history stays available with get_upload_history.` }] };
+const tools = [tool, 'get_upload_status', 'list_scheduled_posts', 'next_queue_slot', p.supports.analytics ? 'get_analytics' : 'get_upload_history', p.supports.comments ? 'list_comments' : 'list_media', 'create_profile', 'generate_connect_link'];
+---
+<BaseLayout title={`${s.title} — ${s.titleB} | Upload-Post`} description={s.sub}>
+  <PageHero breadcrumb={[{ label: 'MCP', href: '/mcp/' }, { label: p.name }]} title={s.title} titleB={s.titleB} subtitle={s.sub} cta={{ label: Astro.locals.t.common.startFree, href: `/app/login?source=${lang}-mcp-${p.slug}` }} cta2={{ label: 'GitHub', href: 'https://github.com/upload-post', icon: 'fa-code-branch' }}>
+    <div slot="aside" class="space-y-4"><div class="flex items-center gap-3"><span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800"><PlatformIcon platform={p.key} size="text-2xl" /></span><span class="icon-box"><i class="fa-solid fa-robot"></i></span></div><CodeBlock title="mcp.json" code={mcpConfig(base)} /></div>
+  </PageHero>
+  <section class="lp-section-gray"><div class="container-x grid md:grid-cols-2 gap-6"><div class="card p-6"><h2 class="font-bold text-slate-900 dark:text-white text-lg">{s.prompts}</h2><ul class="mt-4 space-y-3">{prompts.map((x) => <li class="rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm italic text-slate-700 dark:text-slate-200">“{x}”</li>)}</ul></div><div class="card p-6"><h2 class="font-bold text-slate-900 dark:text-white text-lg">{s.tools}</h2><div class="mt-4 flex flex-wrap gap-1.5">{tools.map((t) => <code class="chip font-mono">{t}</code>)}</div><h3 class="mt-6 font-semibold text-slate-900 dark:text-white">{s.setup}</h3><CodeBlock class="mt-3" title="claude" code={`claude mcp add upload-post --transport http ${base}/mcp \\\n  --header "Authorization: Apikey YOUR_API_KEY"`} /></div></div></section>
+  <FaqList title="FAQ" items={s.faq} />
+  <Cta title={s.titleB} label={Astro.locals.t.common.startFree} href={`/app/login?source=${lang}-mcp-${p.slug}`} secondary={{ label: `${Astro.locals.t.platformsPage.apiFor.replace('{name}', p.name)}`, href: `/platforms/${p.slug}/` }} />
+</BaseLayout>

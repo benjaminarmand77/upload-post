@@ -1,0 +1,16 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { TOOLS, toolSlug, type ToolDef } from '../lib/content/tools';
+import { localePath } from '../lib/i18n';
+interface Props { tool: ToolDef; title?: string }
+const { tool } = Astro.props;
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const t = Astro.locals.t; const L = (p: string) => localePath(lang, p);
+const others = TOOLS.filter((x) => x !== tool).sort(() => 0.5 - Math.random()).slice(0, 4);
+const title = Astro.props.title || `${tool.title[txt]} | Upload-Post`;
+---
+<BaseLayout title={title} description={tool.desc[txt]}>
+  <section class="bg-white dark:bg-slate-950 pt-8 pb-6"><div class="container-x"><nav class="text-xs text-slate-500 flex gap-1.5"><a href={L('/')} class="hover:text-brand-500">{t.common.home}</a><span>/</span><a href={L('/tools/')} class="hover:text-brand-500">{t.common.breadcrumbTools}</a><span>/</span><span class="text-slate-700 dark:text-slate-300">{tool.title[txt]}</span></nav><h1 class="mt-3 text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white">{tool.h1[txt]}</h1><p class="mt-3 max-w-3xl text-lg text-slate-500 dark:text-slate-400">{tool.intro[txt]}</p></div></section>
+  <section class="lp-section-gray !pt-6"><div class="container-x"><slot /></div></section>
+  <section class="lp-section-white"><div class="container-x prose-up max-w-3xl"><slot name="content" /></div></section>
+  <section class="lp-section-gray"><div class="container-x"><h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">{fr ? 'Autres outils gratuits' : 'Other free tools'}</h2><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{others.map((o) => <a href={L(`/tools/${toolSlug(o, lang)}/`)} class="card card-hover p-4"><div class="font-semibold text-slate-900 dark:text-white text-sm"><i class={`fa-solid ${o.icon} text-brand-500 mr-2`}></i>{o.title[txt]}</div><p class="mt-1 text-xs text-slate-500">{o.desc[txt]}</p></a>)}<a href={L('/tools/')} class="card p-4 flex items-center justify-center text-sm font-semibold text-brand-600">{fr ? 'Tous les outils' : 'All tools'} →</a></div></div></section>
+</BaseLayout>

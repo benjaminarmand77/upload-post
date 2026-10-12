@@ -1,0 +1,14 @@
+---
+import { localePath } from '../../lib/i18n';
+interface Props { title: string; subtitle?: string; label: string; href?: string; note?: string; secondary?: { label: string; href: string } }
+const { title, subtitle, label, href = `/app/login?source=${Astro.locals.lang}`, note, secondary } = Astro.props;
+const L = (p: string) => (p.startsWith('/app') || p.startsWith('http') ? p : localePath(Astro.locals.lang, p));
+---
+<section class="lp-section-gray">
+  <div class="container-x">
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-violet-700 px-6 py-14 text-center text-white reveal">
+      <div class="absolute inset-0 bg-grid opacity-30"></div>
+      <div class="relative"><h2 class="text-3xl md:text-4xl font-extrabold tracking-tight">{title}</h2>{subtitle && <p class="mt-4 text-lg text-brand-100 max-w-2xl mx-auto">{subtitle}</p>}<div class="mt-7 flex flex-wrap justify-center gap-3"><a href={L(href)} class="btn bg-white text-brand-700 hover:bg-brand-50 btn-lg shadow-xl">{label}</a>{secondary && <a href={L(secondary.href)} class="btn border border-white/40 text-white hover:bg-white/10 btn-lg">{secondary.label}</a>}</div>{note && <p class="mt-4 text-sm text-brand-100">{note}</p>}</div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import PageHero from '../../../../components/marketing/PageHero.astro';
+import CodeBlock from '../../../../components/marketing/CodeBlock.astro';
+import Cta from '../../../../components/marketing/Cta.astro';
+import PlatformIcon from '../../../../components/PlatformIcon.astro';
+import { platformBySlug } from '../../../../lib/platforms';
+import { isLang, localePath } from '../../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const p = platformBySlug(Astro.params.slug!); if (!p) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (x: string) => localePath(lang, x);
+const exs = fr ? [`Publie ./video.mp4 sur ${p.name} avec un titre accrocheur`, `Programme un post ${p.name} chaque jour à 9h cette semaine à partir du dossier ./posts`, `Quels sont mes meilleurs posts ${p.name} du mois ?`] : [`Post ./video.mp4 to ${p.name} with a catchy title`, `Schedule a ${p.name} post every day at 9am this week from the ./posts folder`, `What are my best ${p.name} posts this month?`];
+const s = fr ? { title: `Claude Code + ${p.name}`, titleB: `Publiez sur ${p.name} depuis votre terminal`, sub: `Le skill Upload-Post apprend à Claude Code à publier, programmer et analyser vos contenus ${p.name}. ${p.page.intro[txt]}`, ex: 'Exemples de commandes', params: `Paramètres ${p.name} que le skill connaît` } : { title: `Claude Code + ${p.name}`, titleB: `Post to ${p.name} from your terminal`, sub: `The Upload-Post skill teaches Claude Code to publish, schedule and analyze your ${p.name} content. ${p.page.intro[txt]}`, ex: 'Example commands', params: `${p.name} parameters the skill knows` };
+const params: Record<string, string[]> = { tiktok: ['privacy_level', 'post_mode', 'disable_duet', 'disable_comment', 'brand_organic_toggle', 'is_aigc', 'tiktok_music_id'], instagram: ['media_type', 'share_to_feed', 'collaborators', 'user_tags', 'cover_url', 'first_comment'], youtube: ['privacyStatus', 'tags', 'categoryId', 'thumbnail', 'selfDeclaredMadeForKids', 'containsSyntheticMedia'], linkedin: ['visibility', 'target_linkedin_page_id', 'linkedin_link_url', 'document'], facebook: ['facebook_page_id', 'facebook_media_type', 'video_state', 'first_comment'], x: ['reply_settings', 'poll_options', 'quote_tweet_id', 'x_long_text_as_post'], threads: ['threads_topic_tag', 'threads_long_text_as_post', 'first_comment'], pinterest: ['pinterest_board_id', 'pinterest_link', 'pinterest_alt_text'], reddit: ['subreddit', 'flair_id', 'reddit_link_url'], bluesky: ['bluesky_link_url', 'reply_to_id'] };
+const list = params[p.key] || ['title', 'description', 'scheduled_date', 'add_to_queue'];
+---
+<BaseLayout title={`${s.title} — ${s.titleB} | Upload-Post`} description={s.sub}>
+  <PageHero breadcrumb={[{ label: 'Claude Code', href: '/skills/claude-code/' }, { label: p.name }]} title={s.title} titleB={s.titleB} subtitle={s.sub} cta={{ label: Astro.locals.t.common.startFree, href: `/app/login?source=${lang}-skill-${p.slug}` }}>
+    <div slot="aside" class="space-y-3"><div class="flex items-center gap-3"><span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800"><PlatformIcon platform={p.key} size="text-2xl" /></span><span class="icon-box"><i class="fa-solid fa-terminal"></i></span></div><CodeBlock title="terminal" code={`npx skills add Upload-Post/upload-post-skill\nexport UPLOAD_POST_API_KEY=your-api-key\nclaude "${exs[0]}"`} /></div>
+  </PageHero>
+  <section class="lp-section-gray"><div class="container-x grid md:grid-cols-2 gap-6"><div class="card p-6"><h2 class="font-bold text-lg text-slate-900 dark:text-white">{s.ex}</h2><ul class="mt-4 space-y-3">{exs.map((x) => <li class="rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm font-mono text-slate-700 dark:text-slate-200">$ claude "{x}"</li>)}</ul></div><div class="card p-6"><h2 class="font-bold text-lg text-slate-900 dark:text-white">{s.params}</h2><div class="mt-4 flex flex-wrap gap-1.5">{list.map((x) => <code class="chip font-mono">{x}</code>)}</div><a href={L(`/platforms/${p.slug}/`)} class="btn-secondary btn-sm mt-5">{Astro.locals.t.platformsPage.apiFor.replace('{name}', p.name)}</a></div></div></section>
+  <Cta title={s.titleB} label={Astro.locals.t.common.startFree} href={`/app/login?source=${lang}-skill-${p.slug}`} />
+</BaseLayout>

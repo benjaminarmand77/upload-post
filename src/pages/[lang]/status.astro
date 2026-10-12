@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import { isLang } from '../../lib/i18n';
+import type { PlatformKey } from '../../lib/platforms';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr';
+const s = fr ? { title: 'État du système', sub: 'État en temps réel des services Upload-Post', all: 'Tous les systèmes opérationnels', degraded: 'Dégradation partielle', outage: 'Incident en cours', current: 'État actuel', ok: 'Opérationnel', api: 'API Upload-Post', dash: 'Tableau de bord', sched: 'Planificateur', webhooks: 'Webhooks', incidents: 'Incidents récents', none: 'Aucun incident au cours des 90 derniers jours.', rate: 'taux de réussite 24 h', sandbox: 'sandbox', live: 'live', updated: 'Mis à jour' } : { title: 'System Status', sub: 'Real-time status of Upload-Post services', all: 'All Systems Operational', degraded: 'Partial degradation', outage: 'Ongoing incident', current: 'Current status', ok: 'Operational', api: 'Upload-Post API', dash: 'Dashboard', sched: 'Scheduler', webhooks: 'Webhooks', incidents: 'Recent incidents', none: 'No incidents in the last 90 days.', rate: '24h success rate', sandbox: 'sandbox', live: 'live', updated: 'Updated' };
+---
+<BaseLayout title={`${s.title} - Upload-Post`} description={s.sub}>
+  <section class="bg-white dark:bg-slate-950 pt-10 pb-8 text-center"><div class="container-x"><h1 class="text-4xl font-extrabold text-slate-900 dark:text-white">{s.title}</h1><p class="mt-2 text-slate-500">{s.sub}</p></div></section>
+  <section class="lp-section-gray !pt-6"><div class="container-x max-w-3xl" id="status" data-s={JSON.stringify(s)}>
+    <div id="overall" class="rounded-xl border border-emerald-300/60 bg-emerald-50 dark:bg-emerald-500/10 px-5 py-4 flex items-center gap-3 text-emerald-800 dark:text-emerald-300 font-semibold"><i class="fa-solid fa-circle-check"></i><span data-overall>{s.all}</span><span class="ml-auto text-xs font-normal" data-updated></span></div>
+    <div class="card mt-5 divide-y divide-slate-100 dark:divide-slate-800">
+      <div class="px-5 py-3 font-semibold text-slate-900 dark:text-white">{s.current}</div>
+      {[[s.api, 'fa-code'], [s.dash, 'fa-gauge-high'], [s.sched, 'fa-clock'], [s.webhooks, 'fa-bolt']].map(([l, i]) => <div class="px-5 py-3 flex items-center gap-3 text-sm"><i class={`fa-solid ${i} text-slate-400 w-4`}></i><span class="flex-1 text-slate-700 dark:text-slate-200">{l}</span><span class="badge-ok" data-core><i class="fa-solid fa-circle-check"></i>{s.ok}</span></div>)}
+    </div>
+    <div class="card mt-5 divide-y divide-slate-100 dark:divide-slate-800" id="plist"></div>
+    <div class="card mt-5 p-5"><h2 class="font-semibold text-slate-900 dark:text-white">{s.incidents}</h2><ul id="incidents" class="mt-3 text-sm text-slate-500"><li>{s.none}</li></ul></div>
+  </div></section>
+  <script>
+    const root = document.getElementById('status')!; const S = JSON.parse(root.dataset.s!);
+    const icons: Record<string, string> = {};
+    (async () => { const d = await fetch('/api/uploadposts/status-page').then((r) => r.json()); const list = document.getElementById('plist')!; list.innerHTML = d.platforms.map((p: any) => `<div class="px-5 py-3 flex items-center gap-3 text-sm"><span class="w-5 text-center" data-icon="${p.key}"></span><span class="flex-1 text-slate-700 dark:text-slate-200">${p.name}</span><span class="chip">${p.mode === 'sandbox' ? S.sandbox : S.live}</span><span class="${p.status === 'operational' ? 'badge-ok' : p.status === 'degraded' ? 'badge-warn' : 'badge-err'}"><i class="fa-solid ${p.status === 'operational' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i>${p.status === 'operational' ? S.ok : p.status}</span></div>`).join(''); document.querySelectorAll<HTMLElement>('[data-icon]').forEach((el) => { const k = el.dataset.icon!; const tpl = document.querySelector<HTMLElement>(`[data-ptpl="${k}"]`); if (tpl) el.innerHTML = tpl.innerHTML; }); const ov = document.getElementById('overall')!; if (d.overall !== 'operational') { ov.className = ov.className.replace('emerald', 'amber').replace(/emerald/g, 'amber'); ov.querySelector('[data-overall]')!.textContent = d.overall === 'outage' ? S.outage : S.degraded; } ov.querySelector('[data-updated]')!.textContent = `${S.updated} ${new Date(d.api.checked_at).toLocaleTimeString()} · ${S.rate} ${d.api.success_rate_24h}%`; if (d.incidents.length) document.getElementById('incidents')!.innerHTML = d.incidents.map((i: any) => `<li class="py-2 border-t border-slate-100 dark:border-slate-800"><b>${i.title}</b> <span class="chip">${i.platform}</span> <span class="text-xs">${new Date(i.created_at).toLocaleString()}${i.resolved_at ? ' → ' + new Date(i.resolved_at).toLocaleString() : ''}</span><p>${i.body || ''}</p></li>`).join(''); })();
+  </script>
+  <div class="hidden">{(['tiktok', 'instagram', 'youtube', 'linkedin', 'facebook', 'x', 'threads', 'pinterest', 'reddit', 'bluesky', 'google_business', 'discord', 'telegram', 'slack', 'mastodon', 'nostr', 'lemmy', 'devto', 'hashnode', 'wordpress', 'whop', 'listmonk'] as PlatformKey[]).map((k) => <span data-ptpl={k}><PlatformIcon platform={k} size="text-sm" /></span>)}</div>
+</BaseLayout>

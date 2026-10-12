@@ -1,0 +1,22 @@
+---
+import { TUTORIALS } from '../../lib/showcase';
+import { localePath } from '../../lib/i18n';
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.community;
+const L = (p: string) => localePath(lang, p);
+---
+<section class="lp-section-white">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {TUTORIALS.map((v, i) => (
+        <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener" class="group reveal" style={`transition-delay:${i * 60}ms`} data-yt={v.id}>
+          <div class="relative aspect-video overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900">
+            <img src={`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`} alt={v.title} loading="lazy" width="480" height="360" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+            <span class="absolute inset-0 flex items-center justify-center"><span class="inline-flex h-14 w-20 items-center justify-center rounded-2xl bg-[#ff0000] text-white shadow-lg transition group-hover:scale-110"><i class="fa-solid fa-play text-xl"></i></span></span>
+          </div>
+          <h3 class="mt-3 text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 line-clamp-2" dir={v.lang === 'ar' ? 'rtl' : 'auto'}>{v.title}</h3>
+        </a>))}
+    </div>
+    <div class="mt-10 text-center"><a href={L('/youtube-tutorials/')} class="btn-primary"><i class="fa-brands fa-youtube"></i>{s.cta}</a></div>
+  </div>
+</section>

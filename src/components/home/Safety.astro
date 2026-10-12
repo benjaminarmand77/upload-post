@@ -1,0 +1,18 @@
+---
+const lang = Astro.locals.lang; const t = Astro.locals.t; const s = t.home.safety;
+const signup = `/app/login?source=${lang}-safety`;
+---
+<section id="trust-safety" class="lp-section-gray">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      <div class="card p-7 reveal"><div class="flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500"><i class="fa-solid fa-triangle-exclamation"></i></span><h3 class="font-semibold text-slate-900 dark:text-white">{s.badTitle}</h3></div>
+        <ul class="mt-5 space-y-3">{s.bad.map((x) => <li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"><i class="fa-solid fa-xmark text-rose-500"></i>{x}</li>)}</ul></div>
+      <div class="relative card p-7 border-emerald-400/60 dark:border-emerald-500/40 shadow-[0_0_0_1px_rgb(16_185_129/.15)] reveal" style="transition-delay:100ms">
+        <span class="absolute -top-3 left-6 badge-ok border border-emerald-300 dark:border-emerald-500/40"><i class="fa-solid fa-shield-halved"></i>Upload-Post</span>
+        <div class="flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"><i class="fa-solid fa-circle-check"></i></span><h3 class="font-semibold text-slate-900 dark:text-white">{s.goodTitle}</h3></div>
+        <ul class="mt-5 space-y-3">{s.good.map((x) => <li class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"><i class="fa-solid fa-check text-emerald-500"></i>{x}</li>)}</ul></div>
+    </div>
+    <div class="mt-10 text-center"><a href={signup} class="btn-primary">{s.cta}</a></div>
+  </div>
+</section>

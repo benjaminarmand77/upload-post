@@ -1,0 +1,12 @@
+---
+interface Props { title?: string; subtitle?: string; steps: { t: string; d: string; icon?: string }[]; gray?: boolean }
+const { title, subtitle, steps, gray = true } = Astro.props;
+---
+<section class={gray ? 'lp-section-gray' : 'lp-section-white'}>
+  <div class="container-x">
+    {title && <div class="text-center reveal mb-10"><h2 class="section-title">{title}</h2>{subtitle && <p class="section-subtitle">{subtitle}</p>}</div>}
+    <div class={`grid sm:grid-cols-2 lg:grid-cols-${Math.min(4, steps.length)} gap-5`}>
+      {steps.map((s, i) => <div class="relative card p-7 text-center reveal" style={`transition-delay:${i * 80}ms`}><span class="absolute -top-3 -right-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-xs font-bold shadow">{i + 1}</span>{s.icon && <span class="icon-box"><i class={`fa-solid ${s.icon}`}></i></span>}<h3 class="mt-3 font-semibold text-slate-900 dark:text-white">{s.t}</h3><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{s.d}</p></div>)}
+    </div>
+  </div>
+</section>

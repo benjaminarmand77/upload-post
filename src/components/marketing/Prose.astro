@@ -1,0 +1,5 @@
+---
+interface Props { class?: string; gray?: boolean; narrow?: boolean }
+const { class: cls = '', gray = false, narrow = true } = Astro.props;
+---
+<section class={gray ? 'lp-section-gray' : 'lp-section-white'}><div class={`container-x ${narrow ? 'max-w-3xl' : ''} prose-up ${cls}`}><slot /></div></section>

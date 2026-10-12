@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Cta from '../../../components/marketing/Cta.astro';
+import { GUIDES } from '../../../lib/content/howto';
+import { isLang, localePath } from '../../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+const s = fr ? { title: 'Guides pratiques', sub: 'Des tutoriels pas à pas pour publier, programmer et automatiser vos réseaux sociaux avec l\'API Upload-Post, n8n, Make, Python et Google Sheets.', read: 'Lire le guide' } : { title: 'How-to guides', sub: 'Step-by-step tutorials to publish, schedule and automate your social media with the Upload-Post API, n8n, Make, Python and Google Sheets.', read: 'Read the guide' };
+---
+<BaseLayout title={`${s.title} | Upload-Post`} description={s.sub}>
+  <section class="bg-white dark:bg-slate-950 pt-12 pb-10 text-center"><div class="container-x"><h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white">{s.title}</h1><p class="mt-4 max-w-2xl mx-auto text-slate-500 dark:text-slate-400">{s.sub}</p></div></section>
+  <section class="lp-section-gray !pt-4"><div class="container-x grid sm:grid-cols-2 lg:grid-cols-3 gap-5">{GUIDES.map((g, i) => <a href={L(`/how-to/${g.slug}/`)} class="card card-hover p-6 reveal" style={`transition-delay:${(i % 3) * 60}ms`}><span class="icon-box"><i class={g.icon.startsWith('fa-brands') ? g.icon : `fa-solid ${g.icon}`}></i></span><h2 class="mt-4 font-semibold text-slate-900 dark:text-white">{g.title[txt]}</h2><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{g.desc[txt]}</p><span class="mt-4 inline-block text-sm font-semibold text-brand-600">{s.read} →</span></a>)}</div></section>
+  <Cta title={Astro.locals.t.home.howItWorks.title} label={Astro.locals.t.common.startFree} />
+</BaseLayout>

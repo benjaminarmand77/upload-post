@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import Cta from '../../components/marketing/Cta.astro';
+import { MAKE_TEMPLATES } from '../../lib/content/templates';
+import type { PlatformKey } from '../../lib/platforms';
+import { isLang, localePath } from '../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en'; const L = (p: string) => localePath(lang, p);
+const s = fr ? { title: 'Modèles Make', sub: 'Blueprints Make prêts à importer pour publier sur vos réseaux sociaux : Drive, Airtable, Google Sheets, bot Telegram, agences. Remplacez la clé API et lancez.', open: 'Voir le modèle', how: 'Comment importer un blueprint', steps: ['Téléchargez le fichier .json du modèle.', 'Dans Make : Créer un scénario → ⋯ → Importer un blueprint.', 'Ouvrez le module HTTP Upload-Post et collez votre clé API dans l\'en-tête Authorization.', 'Testez une exécution, puis activez la planification.'] } : { title: 'Make templates', sub: 'Make blueprints ready to import to publish to your social networks: Drive, Airtable, Google Sheets, Telegram bot, agencies. Replace the API key and run.', open: 'View template', how: 'How to import a blueprint', steps: ['Download the template .json file.', 'In Make: Create a scenario → ⋯ → Import blueprint.', 'Open the Upload-Post HTTP module and paste your API key in the Authorization header.', 'Test one run, then enable scheduling.'] };
+---
+<BaseLayout title={`${s.title} | Upload-Post`} description={s.sub}>
+  <section class="bg-white dark:bg-slate-950 pt-12 pb-8 text-center"><div class="container-x"><h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white">{s.title}</h1><p class="mt-4 max-w-3xl mx-auto text-slate-500 dark:text-slate-400">{s.sub}</p></div></section>
+  <section class="lp-section-gray !pt-4"><div class="container-x grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{MAKE_TEMPLATES.map((t) => <a href={L(`/n8n/${t.slug}/?tool=make`)} class="card card-hover p-5 flex flex-col"><div class="flex items-center gap-1.5 mb-3">{t.platforms.slice(0, 5).map((k) => <PlatformIcon platform={k as PlatformKey} size="text-sm" />)}<span class="ml-auto text-[#6d00cc] dark:text-[#b57bff] font-bold"><i class="fa-solid fa-m"></i></span></div><h2 class="font-semibold text-slate-900 dark:text-white">{t.title[txt]}</h2><p class="mt-2 text-sm text-slate-500 dark:text-slate-400 flex-1">{t.desc[txt]}</p><span class="mt-3 text-sm font-semibold text-brand-600">{s.open} →</span></a>)}</div></section>
+  <section class="lp-section-white"><div class="container-x max-w-3xl"><h2 class="section-title text-center">{s.how}</h2><ol class="mt-8 space-y-3">{s.steps.map((x, i) => <li class="card p-4 flex gap-3"><span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white text-xs font-bold">{i + 1}</span><span>{x}</span></li>)}</ol></div></section>
+  <Cta title={Astro.locals.t.home.integrations.make.t} subtitle={Astro.locals.t.home.integrations.make.d} label={Astro.locals.t.common.startFree} secondary={{ label: Astro.locals.t.home.integrations.viewGuide, href: '/make-integration-guide/' }} />
+</BaseLayout>

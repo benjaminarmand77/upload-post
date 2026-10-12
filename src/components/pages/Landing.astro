@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/marketing/PageHero.astro';
+import CodeBlock from '../../components/marketing/CodeBlock.astro';
+import FeatureGrid from '../../components/marketing/FeatureGrid.astro';
+import Cta from '../../components/marketing/Cta.astro';
+import FaqList from '../../components/marketing/FaqList.astro';
+import { landingBySlug } from '../../lib/content/landing';
+import { isLang } from '../../lib/i18n';
+interface Props { slug: string }
+const l = landingBySlug(Astro.props.slug)!;
+const lang = Astro.locals.lang; const fr = lang === 'fr'; const txt = fr ? 'fr' : 'en';
+const base = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+const code = l.code?.replace(/\{BASE\}/g, base);
+---
+<BaseLayout title={`${l.title[txt]} — ${l.titleB[txt]} | Upload-Post`} description={l.sub[txt]}>
+  <PageHero eyebrow={l.eyebrow?.[txt]} title={l.title[txt]} titleB={l.titleB[txt]} subtitle={l.sub[txt]} center={!l.code} cta={{ label: Astro.locals.t.common.startFree, href: `/app/login?source=${lang}-${l.slug}` }} cta2={{ label: Astro.locals.t.common.apiDocs, href: '/docs/', icon: 'fa-book' }}>{code && <CodeBlock slot="aside" code={code} />}</PageHero>
+  {l.features[txt].length > 0 && <FeatureGrid items={l.features[txt]} />}
+  {l.table && <section class="lp-section-gray"><div class="container-x max-w-5xl card overflow-x-auto reveal"><table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-900/60 text-left text-[11px] uppercase tracking-wider text-slate-400"><tr>{l.table.cols[txt].map((c, i) => <th class={`px-4 py-3 ${i === 1 ? 'text-brand-600' : ''}`}>{c}</th>)}</tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800">{l.table.rows.map((r) => <tr>{r.map((c, i) => <td class={`px-4 py-3 ${i === 0 ? 'font-medium text-slate-900 dark:text-white' : i === 1 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-500'}`}>{c}</td>)}</tr>)}</tbody></table></div></section>}
+  <FaqList title="FAQ" items={l.faq[txt]} />
+  <Cta title={l.titleB[txt]} label={Astro.locals.t.common.startFree} href={`/app/login?source=${lang}-${l.slug}`} note={Astro.locals.t.common.noCreditCard} />
+</BaseLayout>

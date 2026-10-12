@@ -1,0 +1,46 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getAppDict } from '../../i18n/app';
+import { listApiKeys, createApiKey, revokeApiKey } from '../../server/auth';
+import { fmtDate } from '../../lib/i18n';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const k = a.apiKeys;
+const owner = user.owner_user_id || user.id;
+let newKey: string | null = null;
+if (Astro.request.method === 'POST') {
+  const fd = await Astro.request.formData();
+  if (fd.get('action') === 'create') newKey = createApiKey(owner, String(fd.get('label') || 'API key').slice(0, 60)).key;
+  if (fd.get('action') === 'revoke') revokeApiKey(owner, String(fd.get('id')));
+}
+const keys = listApiKeys(owner);
+const site = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+---
+<AppLayout title={k.title} subtitle={k.subtitle} active="api-keys">
+  {newKey && <div class="mb-6 card border-brand-400 p-6"><h2 class="font-semibold text-slate-900 dark:text-white"><i class="fa-solid fa-key text-brand-500 mr-2"></i>{k.newKeyTitle}</h2><p class="text-sm text-slate-500 mt-1">{k.newKeyBody}</p><div class="mt-3 flex items-center gap-2"><code id="new-key" class="flex-1 rounded-lg bg-slate-900 text-emerald-300 px-3 py-2.5 font-mono text-sm break-all">{newKey}</code><button type="button" class="btn-primary btn-sm" data-copy="#new-key" data-copied={a.common.copied}><i class="fa-regular fa-copy"></i>{a.common.copy}</button></div></div>}
+  <div class="grid lg:grid-cols-[1.3fr_1fr] gap-6">
+    <div class="card p-6">
+      <form method="post" class="flex flex-col sm:flex-row gap-2"><input type="hidden" name="action" value="create" /><input name="label" class="input" placeholder={k.label} maxlength="60" /><button class="btn-primary whitespace-nowrap"><i class="fa-solid fa-plus"></i>{k.generate}</button></form>
+      <table class="mt-6 w-full text-sm">
+        <thead><tr class="text-left text-xs uppercase tracking-wider text-slate-400"><th class="py-2">{k.label}</th><th>{k.prefix}</th><th>{k.created}</th><th>{k.lastUsed}</th><th></th></tr></thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {keys.map((key) => <tr class={key.revoked_at ? 'opacity-50' : ''}><td class="py-3 font-medium text-slate-900 dark:text-white">{key.label}</td><td class="font-mono text-xs">{key.key_prefix}…</td><td class="text-xs text-slate-500">{fmtDate(key.created_at, lang)}</td><td class="text-xs text-slate-500">{key.last_used_at ? fmtDate(key.last_used_at, lang, { dateStyle: 'short', timeStyle: 'short' }) : k.never}</td><td class="text-right">{key.revoked_at ? <span class="badge-muted">{k.revoked}</span> : <form method="post" onsubmit={`return confirm('${a.common.confirmDelete}')`}><input type="hidden" name="action" value="revoke" /><input type="hidden" name="id" value={key.id} /><button class="text-xs text-rose-500 hover:underline">{k.revoke}</button></form>}</td></tr>)}
+        </tbody>
+      </table>
+    </div>
+    <div class="space-y-6">
+      <div class="card p-6"><h3 class="font-semibold text-slate-900 dark:text-white">{k.example}</h3><div class="terminal mt-3"><div class="terminal-bar"><span class="terminal-dot bg-rose-500"></span><span class="terminal-dot bg-amber-400"></span><span class="terminal-dot bg-emerald-500"></span></div>
+<pre><span class="tok-cmd">curl</span> <span class="tok-flag">-H</span> <span class="tok-str">'Authorization: Apikey YOUR_API_KEY'</span> \
+  <span class="tok-url">{site}/api/uploadposts/me</span></pre></div>
+        <button type="button" id="test-key" class="btn-secondary btn-sm mt-3"><i class="fa-solid fa-vial"></i>{k.test}</button><pre id="test-out" class="hidden mt-3 rounded-lg bg-slate-900 text-slate-200 p-3 text-xs font-mono overflow-auto"></pre>
+      </div>
+      <div class="card p-6 text-sm text-slate-500"><h3 class="font-semibold text-slate-900 dark:text-white mb-2">Python</h3><pre class="rounded-lg bg-slate-900 text-slate-200 p-3 text-xs font-mono overflow-auto">pip install upload-post
+
+from upload_post import UploadPostClient
+client = UploadPostClient(api_key="YOUR_API_KEY", base_url="{site}/api")
+client.upload_video("video.mp4", title="Hello", user="default", platforms=["tiktok","youtube"])</pre></div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('test-key')?.addEventListener('click', async () => { const out = document.getElementById('test-out')!; out.classList.remove('hidden'); out.textContent = '…'; try { const d = await (window as any).api('/api/uploadposts/me'); out.textContent = JSON.stringify(d, null, 2); } catch (e: any) { out.textContent = JSON.stringify(e.data || { error: e.message }, null, 2); } });
+  </script>
+</AppLayout>

@@ -1,0 +1,69 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PlatformIcon from '../../components/PlatformIcon.astro';
+import { getAppDict } from '../../i18n/app';
+import { get, all, parse } from '../../server/db';
+import { limitsOf, usageOf } from '../../server/plans';
+import { listApiKeys } from '../../server/auth';
+import { listProfiles, accountsOf } from '../../server/uploads';
+import { fmtDate, localePath } from '../../lib/i18n';
+import type { PlatformKey } from '../../lib/platforms';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const o = a.overview;
+const owner = user.owner_user_id || user.id;
+const limits = limitsOf(user); const usage = usageOf(owner);
+const profiles = listProfiles(owner);
+const accounts = profiles.flatMap((p) => accountsOf(p.id).map((acc) => ({ ...acc, profile: p.username })));
+const scheduled = get<any>("SELECT COUNT(*) AS c FROM scheduled_jobs WHERE user_id = ? AND status = 'pending'", owner)?.c || 0;
+const rate = get<any>("SELECT SUM(success) AS ok, COUNT(*) AS n FROM upload_results WHERE user_id = ? AND upload_timestamp >= datetime('now','-30 day')", owner);
+const recent = all<any>('SELECT r.*, u.title FROM upload_results r JOIN uploads u ON u.id = r.upload_id WHERE r.user_id = ? ORDER BY r.upload_timestamp DESC LIMIT 8', owner);
+const keys = listApiKeys(owner); const keyPrefix = keys.find((k) => !k.revoked_at)?.key_prefix || 'your-api-key';
+const welcome = Astro.url.searchParams.get('welcome') === '1';
+const steps = [{ done: accounts.length > 0, t: o.step1, d: o.step1d, href: '/app/manage-users', icon: 'fa-plug' }, { done: keys.length > 0, t: o.step2, d: o.step2d, href: '/app/api-keys', icon: 'fa-key' }, { done: recent.length > 0, t: o.step3, d: o.step3d, href: '/app/upload', icon: 'fa-paper-plane' }];
+const site = (process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '');
+---
+<AppLayout title={`${o.welcome}, ${user.name || user.email.split('@')[0]} 👋`} subtitle={welcome ? o.welcomeNew : undefined} active="overview">
+  {welcome && <div class="mb-6 rounded-xl border border-emerald-300/60 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-circle-check mr-2"></i>{o.welcomeNew}</div>}
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {[{ l: o.uploadsThisMonth, v: `${usage.uploads}${limits.uploads ? ` / ${limits.uploads}` : ''}`, i: 'fa-cloud-arrow-up' }, { l: o.scheduledPosts, v: scheduled, i: 'fa-calendar-days' }, { l: o.connectedAccounts, v: accounts.length, i: 'fa-plug' }, { l: o.successRate, v: rate?.n ? `${Math.round((rate.ok / rate.n) * 100)}%` : '—', i: 'fa-chart-line' }].map((s) => (
+      <div class="card p-5 flex items-center gap-4"><span class="icon-box"><i class={`fa-solid ${s.i}`}></i></span><div><div class="text-2xl font-bold text-slate-900 dark:text-white">{s.v}</div><div class="text-xs text-slate-500">{s.l}</div></div></div>))}
+  </div>
+  <div class="mt-6 grid lg:grid-cols-[1.2fr_1fr] gap-6">
+    <div class="space-y-6">
+      <div class="card p-6">
+        <h2 class="font-semibold text-slate-900 dark:text-white">{o.quickStart}</h2>
+        <ol class="mt-4 space-y-3">
+          {steps.map((s, i) => <li class="flex items-start gap-3"><span class={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${s.done ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>{s.done ? <i class="fa-solid fa-check"></i> : i + 1}</span><div class="flex-1"><a href={s.href} class="font-medium text-slate-900 dark:text-white hover:text-brand-600">{s.t}</a><p class="text-sm text-slate-500">{s.d}</p></div></li>)}
+        </ol>
+      </div>
+      <div class="card p-6">
+        <div class="flex items-center justify-between"><h2 class="font-semibold text-slate-900 dark:text-white">{o.recent}</h2><a href="/app/history" class="text-sm text-brand-600 dark:text-brand-400">{a.common.seeAll}</a></div>
+        {recent.length === 0 ? <p class="mt-4 text-sm text-slate-500">{o.noRecent}</p> : (
+          <ul class="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+            {recent.map((r) => <li class="py-2.5 flex items-center gap-3 text-sm"><PlatformIcon platform={r.platform as PlatformKey} /><span class="flex-1 truncate text-slate-700 dark:text-slate-200">{r.title || r.message}</span><span class={r.success ? 'badge-ok' : 'badge-err'}>{r.success ? a.common.success : a.common.failed}</span><time class="text-xs text-slate-400 whitespace-nowrap">{fmtDate(r.upload_timestamp, lang, { dateStyle: 'short', timeStyle: 'short' })}</time>{r.post_url && <a href={r.post_url} target="_blank" class="text-slate-400 hover:text-brand-500"><i class="fa-solid fa-arrow-up-right-from-square text-xs"></i></a>}</li>)}
+          </ul>)}
+      </div>
+    </div>
+    <div class="space-y-6">
+      <div class="card p-6">
+        <h2 class="font-semibold text-slate-900 dark:text-white">{o.curl}</h2>
+        <div class="terminal mt-4"><div class="terminal-bar"><span class="terminal-dot bg-rose-500"></span><span class="terminal-dot bg-amber-400"></span><span class="terminal-dot bg-emerald-500"></span><button type="button" class="ml-auto text-[11px] text-slate-400 hover:text-white" data-copy="#ov-curl" data-copied={a.common.copied}><i class="fa-regular fa-copy"></i> {a.common.copy}</button></div>
+<pre id="ov-curl"><span class="tok-cmd">curl</span> \
+ <span class="tok-flag">-H</span> <span class="tok-str">'Authorization: Apikey {keyPrefix}…'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'video=@/path/to/video.mp4'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'title="My first post"'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'user="{profiles[0]?.username || 'default'}"'</span> \
+ <span class="tok-flag">-F</span> <span class="tok-str">'platform[]={accounts[0]?.platform || 'tiktok'}'</span> \
+ <span class="tok-flag">-X</span> <span class="tok-cmd">POST</span> <span class="tok-url">{site}/api/upload</span></pre></div>
+        <a href={localePath(lang, '/docs/')} target="_blank" class="btn-secondary btn-sm mt-4"><i class="fa-solid fa-book"></i>{o.viewDocs}</a>
+      </div>
+      <div class="card p-6">
+        <h2 class="font-semibold text-slate-900 dark:text-white">{o.connectedAccounts}</h2>
+        {accounts.length === 0 ? <p class="mt-3 text-sm text-slate-500">{o.step1d}</p> : <ul class="mt-3 flex flex-wrap gap-2">{accounts.map((acc) => <li class="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 text-xs"><PlatformIcon platform={acc.platform as PlatformKey} />@{acc.account_name}<span class="text-slate-400">· {acc.profile}</span>{acc.sandbox ? <span class="chip">{a.common.sandbox}</span> : null}</li>)}</ul>}
+        <a href="/app/manage-users" class="btn-primary btn-sm mt-4"><i class="fa-solid fa-plus"></i>{a.common.connect}</a>
+        <p class="mt-4 text-[11px] text-slate-400"><i class="fa-solid fa-circle-info mr-1"></i>{o.sandboxNote}</p>
+      </div>
+      <div class="card p-6"><h2 class="font-semibold text-slate-900 dark:text-white">{o.plan}</h2><div class="mt-2 flex items-center justify-between"><span class="text-2xl font-bold capitalize text-brand-600 dark:text-brand-400">{user.plan}</span><a href="/app/billing" class="btn-secondary btn-sm">{a.common.upgrade}</a></div><ul class="mt-3 text-xs text-slate-500 space-y-1"><li>{limits.profiles} {a.billing.profilesUsed.toLowerCase()} · {limits.seats} {a.team.seats}</li><li>{limits.ffmpegMinutes} {a.billing.ffmpegMin.toLowerCase()} · {limits.aiShorts} {a.billing.aiShorts.toLowerCase()}</li></ul></div>
+    </div>
+  </div>
+</AppLayout>

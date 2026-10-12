@@ -1,0 +1,16 @@
+---
+const t = Astro.locals.t; const s = t.home.views;
+---
+<section id="trust-views" class="lp-section-white">
+  <div class="container-x">
+    <div class="text-center reveal"><h2 class="section-title">{s.title}</h2><p class="section-subtitle">{s.subtitle}</p></div>
+    <div class="mt-10 card grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-800 reveal">
+      <div class="p-8"><span class="icon-box"><i class="fa-solid fa-rocket"></i></span><h3 class="mt-4 text-xl font-semibold text-slate-900 dark:text-white">{s.cardTitle}</h3><p class="mt-3 text-slate-500 dark:text-slate-400 leading-relaxed">{s.cardBody}</p></div>
+      <div class="p-8 space-y-6">
+        <div><div class="flex items-center gap-3"><span class="icon-box !h-9 !w-9 text-sm"><i class="fa-solid fa-brain"></i></span><h4 class="font-semibold text-slate-900 dark:text-white">{s.algoTitle}</h4></div><ul class="mt-3 grid sm:grid-cols-2 gap-2">{s.algo.map((x) => <li class="check-li">{x}</li>)}</ul></div>
+        <div class="border-t border-slate-200 dark:border-slate-800"></div>
+        <div><div class="flex items-center gap-3"><span class="icon-box !h-9 !w-9 text-sm"><i class="fa-solid fa-clock"></i></span><h4 class="font-semibold text-slate-900 dark:text-white">{s.schedTitle}</h4></div><ul class="mt-3 grid sm:grid-cols-2 gap-2">{s.sched.map((x) => <li class="check-li">{x}</li>)}</ul></div>
+      </div>
+    </div>
+  </div>
+</section>

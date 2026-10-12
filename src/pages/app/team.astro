@@ -1,0 +1,31 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getAppDict } from '../../i18n/app';
+import { listMembers, inviteMember, removeMember, acceptInvite } from '../../server/team';
+import { limitsOf } from '../../server/plans';
+import { getUser } from '../../server/auth';
+import { fmtDate } from '../../lib/i18n';
+const user = Astro.locals.user; if (!user) return Astro.redirect('/app/login', 303);
+const lang = Astro.locals.lang; const a = getAppDict(lang); const t = a.team;
+const owner = user.owner_user_id ? getUser(user.owner_user_id)! : user;
+let error: string | null = null; let inviteUrl: string | null = null;
+const accept = Astro.url.searchParams.get('accept');
+if (accept) { try { if (acceptInvite(accept, user)) return Astro.redirect('/app/?joined=1', 303); } catch (e: any) { error = e.message; } }
+if (Astro.request.method === 'POST' && user.id === owner.id) {
+  const fd = await Astro.request.formData();
+  try { if (fd.get('action') === 'invite') { const token = inviteMember(owner, String(fd.get('email')), (fd.get('role') as any) || 'member'); inviteUrl = `${(process.env.SITE_URL || Astro.url.origin).replace(/\/$/, '')}/app/team?accept=${token}`; } if (fd.get('action') === 'remove') removeMember(owner.id, String(fd.get('id'))); } catch (e: any) { error = e.message; }
+}
+const members = listMembers(owner.id); const seats = limitsOf(owner).seats;
+---
+<AppLayout title={t.title} subtitle={t.subtitle} active="team">
+  {error && <div class="mb-5 rounded-xl border border-rose-300/60 bg-rose-50 dark:bg-rose-500/10 px-4 py-3 text-sm text-rose-700">{error}</div>}
+  {inviteUrl && <div class="mb-5 card border-brand-400 p-5"><div class="font-semibold text-slate-900 dark:text-white">{t.inviteLink}</div><div class="mt-2 flex gap-2"><code id="inv" class="input font-mono text-xs flex-1 break-all">{inviteUrl}</code><button type="button" class="btn-primary btn-sm" data-copy="#inv">{a.common.copy}</button></div></div>}
+  <div class="card p-6">
+    <div class="flex items-center justify-between mb-4"><h2 class="font-semibold text-slate-900 dark:text-white">{t.seatsUsed}: {1 + members.length} / {seats} {t.seats}</h2><a href="/app/billing" class="text-sm text-brand-600">{a.common.upgrade}</a></div>
+    <ul class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+      <li class="py-3 flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white text-xs font-bold">{(owner.name || owner.email).slice(0, 2).toUpperCase()}</span><div class="flex-1"><div class="font-medium text-slate-900 dark:text-white">{owner.name || owner.email}</div><div class="text-xs text-slate-500">{owner.email}</div></div><span class="badge-brand">{t.owner}</span></li>
+      {members.map((m) => <li class="py-3 flex items-center gap-3"><span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-xs font-bold">{m.email.slice(0, 2).toUpperCase()}</span><div class="flex-1"><div class="font-medium text-slate-900 dark:text-white">{m.name || m.email}</div><div class="text-xs text-slate-500">{m.email} · {m.accepted_at ? fmtDate(m.accepted_at, lang) : t.pendingInvite}</div></div><span class="badge-muted">{m.role === 'admin' ? t.admin : t.member}</span>{user.id === owner.id && <form method="post"><input type="hidden" name="action" value="remove" /><input type="hidden" name="id" value={m.id} /><button class="text-xs text-rose-500 hover:underline">{t.remove}</button></form>}</li>)}
+    </ul>
+    {user.id === owner.id && <form method="post" class="mt-5 flex flex-col sm:flex-row gap-2"><input type="hidden" name="action" value="invite" /><input name="email" type="email" required class="input" placeholder={t.email} /><select name="role" class="input input-select sm:!w-36"><option value="member">{t.member}</option><option value="admin">{t.admin}</option></select><button class="btn-primary whitespace-nowrap"><i class="fa-solid fa-user-plus"></i>{t.invite}</button></form>}
+  </div>
+</AppLayout>

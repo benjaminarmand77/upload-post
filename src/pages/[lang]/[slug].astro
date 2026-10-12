@@ -1,0 +1,17 @@
+---
+/** Dispatcher for single-segment marketing slugs: integrations, secondary landings and legal pages share this pattern. */
+import Integration from '../../components/pages/Integration.astro';
+import Landing from '../../components/pages/Landing.astro';
+import Legal from '../../components/pages/Legal.astro';
+import { integrationBySlug } from '../../lib/content/integrations';
+import { landingBySlug } from '../../lib/content/landing';
+import { legalBySlug } from '../../lib/content/legal';
+import { isLang } from '../../lib/i18n';
+if (!isLang(Astro.params.lang!)) return new Response(null, { status: 404 });
+const slug = Astro.params.slug!;
+const kind = integrationBySlug(slug) ? 'integration' : landingBySlug(slug) ? 'landing' : legalBySlug(slug) ? 'legal' : null;
+if (!kind) return new Response(null, { status: 404 });
+---
+{kind === 'integration' && <Integration slug={slug} />}
+{kind === 'landing' && <Landing slug={slug} />}
+{kind === 'legal' && <Legal slug={slug} />}
