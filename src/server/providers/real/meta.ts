@@ -60,7 +60,9 @@ const facebook: OAuthProvider = {
 
 const instagram: OAuthProvider = {
   kind: 'oauth', key: 'instagram', configured: () => !!env('META_APP_ID'),
-  authorizeUrl: facebook.authorizeUrl, exchangeCode: facebook.exchangeCode,
+  // Instagram-only scopes: the Page publishing ones are not offered in Meta's Instagram use case and trigger "Invalid Scopes"
+  authorizeUrl: (state, redirectUri) => `https://www.facebook.com/v21.0/dialog/oauth?${form({ client_id: env('META_APP_ID'), redirect_uri: redirectUri, state, scope: 'pages_show_list,pages_read_engagement,business_management,instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,instagram_manage_messages', response_type: 'code' })}`,
+  exchangeCode: facebook.exchangeCode,
   async fetchAccount(t) {
     const ps = await pages(t.access_token); const p = ps.find((x) => x.instagram_business_account);
     if (!p) throw new Error('No Instagram professional account linked to your Facebook Pages.');
@@ -75,16 +77,17 @@ const instagram: OAuthProvider = {
       if (i.mediaType === 'video') {
         const type = (i.params.media_type || 'REELS').toUpperCase();
         const c = await jsonFetch(`${G}/${ig}/media?${form({ ...common, media_type: type, video_url: mediaUrl(i.media[0]), share_to_feed: type === 'REELS' ? i.params.share_to_feed !== 'false' : undefined, cover_url: i.params.cover_url || (typeof i.params.cover_image === 'string' ? publicUrl(i.params.cover_image) : undefined), thumb_offset: i.params.thumb_offset || undefined, audio_name: i.params.audio_name || undefined })}`, { method: 'POST' });
-        creation = c.id; await waitContainer(creation, tok);
+        creation = c.id;
       } else if (i.media.length === 1) {
         const m = i.media[0]; const type = (i.params.media_type || 'IMAGE').toUpperCase();
         const c = await jsonFetch(`${G}/${ig}/media?${form({ ...common, media_type: type === 'STORIES' ? 'STORIES' : undefined, image_url: m.kind === 'photo' ? mediaUrl(m) : undefined, video_url: m.kind === 'video' ? mediaUrl(m) : undefined })}`, { method: 'POST' });
-        creation = c.id; if (m.kind === 'video') await waitContainer(creation, tok);
+        creation = c.id;
       } else {
         const children: string[] = [];
         for (const m of i.media.slice(0, 10)) { const c = await jsonFetch(`${G}/${ig}/media?${form({ is_carousel_item: true, image_url: m.kind === 'photo' ? mediaUrl(m) : undefined, video_url: m.kind === 'video' ? mediaUrl(m) : undefined, media_type: m.kind === 'video' ? 'VIDEO' : undefined, access_token: tok })}`, { method: 'POST' }); if (m.kind === 'video') await waitContainer(c.id, tok); children.push(c.id); }
         const c = await jsonFetch(`${G}/${ig}/media?${form({ ...common, media_type: 'CAROUSEL', children: children.join(',') })}`, { method: 'POST' }); creation = c.id;
       }
+      await waitContainer(creation, tok); // photos and carousels also need FINISHED, else media_publish says "Media ID is not available"
       const pub = await jsonFetch(`${G}/${ig}/media_publish?${form({ creation_id: creation, access_token: tok })}`, { method: 'POST' });
       const info = await jsonFetch(`${G}/${pub.id}?fields=permalink&access_token=${tok}`).catch(() => ({}));
       if (i.firstComment) jsonFetch(`${G}/${pub.id}/comments?${form({ message: i.firstComment, access_token: tok })}`, { method: 'POST' }).catch(() => {});

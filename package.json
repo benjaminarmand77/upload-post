@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev --host 127.0.0.1 --port 4321",
+    "dev": "node --env-file-if-exists=.env node_modules/astro/astro.js dev --host 127.0.0.1 --port 4321",
     "build": "astro build",
     "preview": "astro preview",
-    "start": "node ./dist/server/entry.mjs",
+    "start": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
     "check": "astro check"
   },
   "dependencies": {

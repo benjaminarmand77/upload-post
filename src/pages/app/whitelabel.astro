@@ -30,7 +30,7 @@ const sel = Astro.url.searchParams.get('profile') || profiles[0]?.username || 'd
     </div>
   </div>
   <script define:vars={{ site }}>
-    const form = document.getElementById('wl'); const api = window.api, toast = window.toast;
+    const form = document.getElementById('wl'); const api = (...a) => window.api(...a), toast = (...a) => window.toast(...a); // layout script is deferred: resolve at call time
     const body = () => { const fd = new FormData(form); const o = {}; for (const [k, v] of fd.entries()) { if (k === 'platforms') (o.platforms ||= []).push(v); else if (k === 'show_calendar') o.show_calendar = true; else if (v) o[k] = v; } if (!fd.get('show_calendar')) o.show_calendar = false; return o; };
     const snippet = () => { document.getElementById('snippet').textContent = `curl -X POST ${site}/api/uploadposts/users/generate-jwt \\\n  -H 'Authorization: Apikey YOUR_API_KEY' -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(body())}'`; };
     form.addEventListener('input', snippet); form.addEventListener('change', snippet); snippet();

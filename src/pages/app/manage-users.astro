@@ -72,7 +72,7 @@ const names = Object.fromEntries(PLATFORMS.map((x) => [x.key, x.name]));
     </form></div>
 
   <script define:vars={{ credDefs, names, strings: { credHelp: p.credHelp, connectTitle: p.connectTitle, confirm: a.common.confirmDelete } }}>
-    const api = window.api, toast = window.toast;
+    const api = (...a) => window.api(...a), toast = (...a) => window.toast(...a); // layout script is deferred: resolve at call time
     const modal = document.getElementById('cred-modal'), form = document.getElementById('cred-form');
     document.querySelectorAll('[data-cred]').forEach((b) => b.addEventListener('click', () => {
       const k = b.dataset.cred; form.platform.value = k;

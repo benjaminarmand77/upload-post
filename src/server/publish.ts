@@ -2,6 +2,7 @@ import { get, all, run, newId, now, json, parse, logEvent, type UploadRow, type 
 import { mediaForUpload } from './media';
 import { publishTo } from './providers';
 import { emitEvent } from './webhooks';
+import { sendMail } from './mailer';
 import { bumpUsage } from './plans';
 import { accountFor } from './uploads';
 import type { PlatformKey } from '../lib/platforms';
@@ -41,6 +42,19 @@ export async function processUpload(uploadId: string, onlyPlatforms?: string[]):
       } else {
         run('INSERT INTO upload_results (id, upload_id, user_id, profile_username, platform, success, message, upload_timestamp, error_code, media_type, media_size_bytes) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
           rid, uploadId, upload.user_id, upload.profile_username, platform, 0, res.error, ts, res.error_code || 'publish_failed', upload.media_type, media.reduce((s, m) => s + (m.size || 0), 0));
+      }
+      // TikTok drafts drop the caption: send it by email and/or Telegram so it can be pasted in the TikTok app
+      if (platform === 'tiktok' && res.success && /inbox|draft/i.test(res.message || '')) {
+        const caption = [title, description].filter(Boolean).join('\n\n');
+        if (process.env.NOTIFY_EMAIL) sendMail({ to: process.env.NOTIFY_EMAIL, subject: `Légende TikTok à coller : ${(title || 'vidéo').slice(0, 60)}`, text: [caption, firstComment && `Premier commentaire : ${firstComment}`].filter(Boolean).join('\n\n') || '(aucun texte)' }).catch((e) => console.error('[mail]', e?.message || e));
+        const tg = process.env.TELEGRAM_NOTIFY_BOT_TOKEN, chat = process.env.TELEGRAM_NOTIFY_CHAT_ID;
+        if (tg && chat) {
+          const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          // <code> blocks are copied with one tap in Telegram
+          const text = `🎬 Brouillon TikTok prêt\n\nLégende (touche pour copier) :\n<code>${esc(caption || '(aucun texte)')}</code>${firstComment ? `\n\nPremier commentaire :\n<code>${esc(firstComment)}</code>` : ''}`;
+          fetch(`https://api.telegram.org/bot${tg}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML' }) })
+            .then(async (r) => { if (!r.ok) console.error('[telegram]', r.status, (await r.text()).slice(0, 200)); }).catch((e) => console.error('[telegram]', e?.message || e));
+        }
       }
       emitEvent(upload.user_id, 'upload_completed', { user_email: user?.email, profile_username: upload.profile_username, platform, media_type: upload.media_type, title, caption: description, request_id: uploadId, job_id: upload.job_id, result: res.success ? { success: true, url: res.post_url, publish_id: res.meta?.publish_id, post_id: res.platform_post_id } : { success: false, error: res.error, error_code: res.error_code } }).catch(() => {});
     }));
