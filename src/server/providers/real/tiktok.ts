@@ -25,7 +25,8 @@ const tiktok: OAuthProvider = {
   async publish(i) {
     try {
       const at = await token(i.account); const h = { authorization: `Bearer ${at}`, 'content-type': 'application/json; charset=UTF-8' }; const p = i.params;
-      const draft = (p.post_mode || 'DIRECT_POST') === 'MEDIA_UPLOAD' || p.tiktok_upload_to_draft === 'true';
+      // drafts by default: unaudited TikTok apps can only direct-post privately
+      const draft = (p.post_mode || 'MEDIA_UPLOAD') === 'MEDIA_UPLOAD' || p.tiktok_upload_to_draft === 'true';
       const postInfo: any = { title: (p.tiktok_title || i.title || '').slice(0, 2200), privacy_level: p.privacy_level || 'PUBLIC_TO_EVERYONE', disable_duet: p.disable_duet === 'true', disable_comment: p.disable_comment === 'true', disable_stitch: p.disable_stitch === 'true', brand_content_toggle: p.brand_content_toggle === 'true', brand_organic_toggle: p.brand_organic_toggle === 'true', is_aigc: p.is_aigc === 'true' || p.is_ai_generated === 'true' };
       if (i.mediaType === 'photo') {
         const body = { post_info: { ...postInfo, description: p.tiktok_description || i.description || undefined, auto_add_music: p.auto_add_music === 'true' }, source_info: { source: 'PULL_FROM_URL', photo_cover_index: Number(p.photo_cover_index || 0), photo_images: i.media.slice(0, 35).map((m) => publicUrl(`/uploads/${m.id}`)) }, post_mode: draft ? 'MEDIA_UPLOAD' : 'DIRECT_POST', media_type: 'PHOTO' };
@@ -33,7 +34,8 @@ const tiktok: OAuthProvider = {
         if (r.error?.code && r.error.code !== 'ok') return fail(`TikTok: ${r.error.message}`, r.error.code);
         return await poll(r.data.publish_id, at, i.account.account_name!, draft);
       }
-      const m = i.media[0]; const buf = await readMedia(m); const CH = 10 * 1024 * 1024; const parts = chunk(buf, CH);
+      const m = i.media[0]; const buf = await readMedia(m); // TikTok: count = floor(size / chunk), last chunk absorbs the remainder; files <= 64 MB go in one chunk
+      const CH = buf.length <= 64 * 1024 * 1024 ? buf.length : 10 * 1024 * 1024; const n = Math.floor(buf.length / CH); const parts = chunk(buf.subarray(0, (n - 1) * CH), CH).concat([buf.subarray((n - 1) * CH)]);
       const init = await jsonFetch(draft ? 'https://open.tiktokapis.com/v2/post/publish/inbox/video/init/' : 'https://open.tiktokapis.com/v2/post/publish/video/init/', { method: 'POST', headers: h, body: JSON.stringify({ ...(draft ? {} : { post_info: { ...postInfo, video_cover_timestamp_ms: Number(p.cover_timestamp || 1000) } }), source_info: { source: 'FILE_UPLOAD', video_size: buf.length, chunk_size: CH, total_chunk_count: parts.length } }) });
       if (init.error?.code && init.error.code !== 'ok') return fail(`TikTok: ${init.error.message}`, init.error.code);
       let offset = 0;

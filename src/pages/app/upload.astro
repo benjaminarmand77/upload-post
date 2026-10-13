@@ -65,13 +65,13 @@ const fr = lang === 'fr';
 
   <script define:vars={{ s: { chars: u.chars, submit: u.submit, submitSchedule: u.submitSchedule, submitQueue: u.submitQueue, openPost: u.openPost, dropHere: u.dropHere, ok: a.common.success, failed: a.common.failed, scheduled: a.common.scheduled }, fr }}>
     const root = document.getElementById('up'); const profiles = JSON.parse(root.dataset.profiles); const PL = JSON.parse(root.dataset.plat); const xlinks = root.dataset.xlinks === '1';
-    const form = document.getElementById('upload-form'); const api = window.api, toast = window.toast;
+    const form = document.getElementById('upload-form'); const api = (...a) => window.api(...a), toast = (...a) => window.toast(...a); // layout script is deferred: resolve at call time
     const $ = (id) => document.getElementById(id);
     let files = [];
     const mediaType = () => form.media_type.value; const profile = () => profiles.find((p) => p.username === form.user.value) || profiles[0];
     const selected = () => [...document.querySelectorAll('#platforms input:checked')].map((i) => i.value);
     const PP = {
-      tiktok: [['privacy_level', 'select', ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'FOLLOWER_OF_CREATOR', 'SELF_ONLY']], ['post_mode', 'select', ['DIRECT_POST', 'MEDIA_UPLOAD']], ['disable_comment', 'check'], ['disable_duet', 'check'], ['disable_stitch', 'check'], ['brand_organic_toggle', 'check'], ['brand_content_toggle', 'check'], ['is_aigc', 'check']],
+      tiktok: [['privacy_level', 'select', ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'FOLLOWER_OF_CREATOR', 'SELF_ONLY']], ['post_mode', 'select', ['MEDIA_UPLOAD', 'DIRECT_POST']], ['disable_comment', 'check'], ['disable_duet', 'check'], ['disable_stitch', 'check'], ['brand_organic_toggle', 'check'], ['brand_content_toggle', 'check'], ['is_aigc', 'check']],
       instagram: [['media_type', 'select', (t) => t === 'video' ? ['REELS', 'STORIES'] : ['IMAGE', 'STORIES']], ['share_to_feed', 'check', true], ['collaborators', 'text'], ['user_tags', 'text'], ['location_id', 'text'], ['share_mode', 'select', ['CUSTOM', 'TRIAL_REELS_SHARE_TO_FOLLOWERS_IF_LIKED', 'TRIAL_REELS_DONT_SHARE_TO_FOLLOWERS']]],
       youtube: [['privacyStatus', 'select', ['public', 'unlisted', 'private']], ['tags', 'text'], ['categoryId', 'text'], ['selfDeclaredMadeForKids', 'check'], ['containsSyntheticMedia', 'check'], ['embeddable', 'check', true]],
       linkedin: [['visibility', 'select', ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN']], ['target_linkedin_page_id', 'text'], ['linkedin_link_url', 'text']],
